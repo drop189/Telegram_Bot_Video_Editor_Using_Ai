@@ -15,9 +15,9 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 # ============ НАСТРОЙКИ ============
-VIDEOS_FOLDER = r"D:\vid4inst\input"
-OUTPUT_FOLDER = r"D:\vid4inst\output"
-FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
+VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
+OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "/tmp/videos/output")
+FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 
 OPENROUTER_API_KEY = config.API_KEY
 OPENROUTER_MODEL = "openai/gpt-4o-mini"
@@ -26,7 +26,7 @@ TOKEN = config.TOKEN
 
 # Настройка администраторов и пользователей
 ADMIN_IDS = config.ADMIN_IDS  # ID пользователя Telegram
-SUBSCRIBED_USERS_FILE = r"D:\vid4inst\users.json"  # Файл для сохранения пользователей
+SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
 
 # Настройка логирования
 logging.basicConfig(
@@ -120,7 +120,7 @@ async def send_bot_stopping_notification():
 
 # ============ ФУНКЦИИ ОБРАБОТКИ ВИДЕО ============
 
-# Конвертация видео с Iphone
+# Конвертация видео с iPhone
 def convert_mov_to_mp4(input_file, output_file):
     """Конвертируем MOV в MP4 через FFmpeg"""
     logging.info(f"Конвертирую {os.path.basename(input_file)}...")
