@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import subprocess
 import random
@@ -55,6 +56,71 @@ class VideoProcessing(StatesGroup):
     waiting_for_video = State()
     processing = State()
 
+
+# Настройка логирования для Railway
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # Важно для Railway
+    ]
+)
+
+def check_system_dependencies():
+    """Проверяем системные зависимости"""
+    logging.info("=== ПРОВЕРКА СИСТЕМНЫХ ЗАВИСИМОСТЕЙ ===")
+
+    # Проверяем FFmpeg
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-version"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            logging.info("✅ FFmpeg найден")
+            # Получаем версию из вывода
+            version_line = result.stdout.split('\n')[0]
+            logging.info(f"   Версия: {version_line}")
+        else:
+            logging.error("❌ FFmpeg не работает корректно")
+            return False
+    except FileNotFoundError:
+        logging.error("❌ FFmpeg не найден в PATH")
+
+        # Пробуем найти альтернативные пути
+        possible_paths = [
+            "/usr/bin/ffmpeg",
+            "/usr/local/bin/ffmpeg",
+            "/bin/ffmpeg",
+            "ffmpeg"
+        ]
+
+        for path in possible_paths:
+            try:
+                subprocess.run([path, "-version"],
+                               capture_output=True,
+                               text=True)
+                logging.info(f"✅ FFmpeg найден по пути: {path}")
+                return True
+            except:
+                continue
+
+        return False
+
+    # Проверяем другие команды
+    commands_to_check = ["which", "ls", "mkdir", "rm"]
+    for cmd in commands_to_check:
+        try:
+            subprocess.run([cmd, "--version"],
+                           capture_output=True,
+                           text=True)
+            logging.debug(f"✅ {cmd} доступен")
+        except:
+            logging.warning(f"⚠️  {cmd} не найден")
+
+    logging.info("=== ПРОВЕРКА ЗАВЕРШЕНА ===")
+    return True
 
 # ============ ФУНКЦИИ ДЛЯ ПОДПИСЧИКОВ ============
 # Подгрузка пользователей бота
@@ -1112,6 +1178,14 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+        logging.info("Запуск бота на Railway...")
+
+        if not check_system_dependencies():
+            logging.error("Критические зависимости отсутствуют. Завершение работы.")
+            sys.exit(1)
+
+    # Запускаем бота
+        logging.info("Все зависимости доступны. Запускаю бота...")
     except KeyboardInterrupt:
         print("\nБот выключен пользователем")
     except Exception as e:
