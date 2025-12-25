@@ -15,9 +15,10 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 # ============ НАСТРОЙКИ ============
-VIDEOS_FOLDER = r"D:\vid4inst\input"
-OUTPUT_FOLDER = r"D:\vid4inst\output"
-FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
+VIDEOS_FOLDER = "/tmp/vid4inst_input"
+OUTPUT_FOLDER = "/tmp/vid4inst_output"
+FFMPEG_PATH = "ffmpeg"
+
 
 OPENROUTER_API_KEY = config.API_KEY
 OPENROUTER_MODEL = "openai/gpt-4o-mini"
@@ -26,7 +27,7 @@ TOKEN = config.TOKEN
 
 # Настройка администраторов и пользователей
 ADMIN_IDS = config.ADMIN_IDS  # ID пользователя Telegram
-SUBSCRIBED_USERS_FILE = r"D:\vid4inst\users.json"  # Файл для сохранения пользователей
+SUBSCRIBED_USERS_FILE = "/tmp/users.json" # Файл для сохранения пользователей
 
 # Настройка логирования
 logging.basicConfig(
