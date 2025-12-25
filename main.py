@@ -19,13 +19,14 @@ VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "/tmp/videos/output")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 
-OPENROUTER_API_KEY = config.API_KEY
-OPENROUTER_MODEL = "openai/gpt-4o-mini"
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 
-TOKEN = config.TOKEN
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # Настройка администраторов и пользователей
-ADMIN_IDS = config.ADMIN_IDS  # ID пользователя Telegram
+admin_ids_str = os.environ.get("ADMIN_IDS", "")
+ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] if admin_ids_str else []  # ID пользователя Telegram
 SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
 
 # Настройка логирования
