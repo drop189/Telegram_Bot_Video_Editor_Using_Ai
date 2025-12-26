@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import subprocess
 import random
@@ -15,19 +16,19 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 # ============ НАСТРОЙКИ ============
-VIDEOS_FOLDER = "/tmp/vid4inst_input"
-OUTPUT_FOLDER = "/tmp/vid4inst_output"
-FFMPEG_PATH = "ffmpeg"
+VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
+OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "/tmp/videos/output")
+FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 
-OPENROUTER_API_KEY = config.API_KEY
-OPENROUTER_MODEL = "openai/gpt-4o-mini"
-
-TOKEN = config.TOKEN
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # Настройка администраторов и пользователей
-ADMIN_IDS = config.ADMIN_IDS  # ID пользователя Telegram
-SUBSCRIBED_USERS_FILE = "/tmp/users.json" # Файл для сохранения пользователей
+admin_ids_str = os.environ.get("ADMIN_IDS", "")
+ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] if admin_ids_str else []  # ID пользователя Telegram
+SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
 
 # Настройка логирования
 logging.basicConfig(
@@ -55,6 +56,71 @@ class VideoProcessing(StatesGroup):
     waiting_for_video = State()
     processing = State()
 
+
+# Настройка логирования для Railway
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # Важно для Railway
+    ]
+)
+
+def check_system_dependencies():
+    """Проверяем системные зависимости"""
+    logging.info("=== ПРОВЕРКА СИСТЕМНЫХ ЗАВИСИМОСТЕЙ ===")
+
+    # Проверяем FFmpeg
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-version"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            logging.info("✅ FFmpeg найден")
+            # Получаем версию из вывода
+            version_line = result.stdout.split('\n')[0]
+            logging.info(f"   Версия: {version_line}")
+        else:
+            logging.error("❌ FFmpeg не работает корректно")
+            return False
+    except FileNotFoundError:
+        logging.error("❌ FFmpeg не найден в PATH")
+
+        # Пробуем найти альтернативные пути
+        possible_paths = [
+            "/usr/bin/ffmpeg",
+            "/usr/local/bin/ffmpeg",
+            "/bin/ffmpeg",
+            "ffmpeg"
+        ]
+
+        for path in possible_paths:
+            try:
+                subprocess.run([path, "-version"],
+                               capture_output=True,
+                               text=True)
+                logging.info(f"✅ FFmpeg найден по пути: {path}")
+                return True
+            except:
+                continue
+
+        return False
+
+    # Проверяем другие команды
+    commands_to_check = ["which", "ls", "mkdir", "rm"]
+    for cmd in commands_to_check:
+        try:
+            subprocess.run([cmd, "--version"],
+                           capture_output=True,
+                           text=True)
+            logging.debug(f"✅ {cmd} доступен")
+        except:
+            logging.warning(f"⚠️  {cmd} не найден")
+
+    logging.info("=== ПРОВЕРКА ЗАВЕРШЕНА ===")
+    return True
 
 # ============ ФУНКЦИИ ДЛЯ ПОДПИСЧИКОВ ============
 # Подгрузка пользователей бота
@@ -121,7 +187,7 @@ async def send_bot_stopping_notification():
 
 # ============ ФУНКЦИИ ОБРАБОТКИ ВИДЕО ============
 
-# Конвертация видео с Iphone
+# Конвертация видео с iPhone
 def convert_mov_to_mp4(input_file, output_file):
     """Конвертируем MOV в MP4 через FFmpeg"""
     logging.info(f"Конвертирую {os.path.basename(input_file)}...")
@@ -1112,6 +1178,14 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+        logging.info("Запуск бота на Railway...")
+
+        if not check_system_dependencies():
+            logging.error("Критические зависимости отсутствуют. Завершение работы.")
+            sys.exit(1)
+
+    # Запускаем бота
+        logging.info("Все зависимости доступны. Запускаю бота...")
     except KeyboardInterrupt:
         print("\nБот выключен пользователем")
     except Exception as e:
