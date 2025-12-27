@@ -232,7 +232,7 @@ def add_text_with_ffmpeg(input_file, output_file, text):
                    f"x=(w-text_w)/2:"
                    f"y=h*0.8-text_h/2:"
                    f"text_align=center:"
-                   f"fix_bounds=true:",
+                   f"fix_bounds=true",
             '-c:a', 'copy',
             '-y', output_file
         ]
