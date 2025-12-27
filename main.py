@@ -6,6 +6,7 @@ import random
 import requests
 import json
 import logging
+from PIL import Image, ImageDraw, ImageFont
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
@@ -235,7 +236,6 @@ def add_text_with_ffmpeg(input_file, output_file, text):
                    f"fontsize=35:"
                    f"box=1:boxcolor=white@1:boxborderw=15:"
                    f"x=(w-text_w)/2:y=h*0.8:"
-                   f"shadowcolor=gray:shadowx=2:shadowy=2:"
                    f"line_spacing=10:text_align=center:fix_bounds=true",
             '-c:a', 'copy',
             '-y', output_file
@@ -259,6 +259,106 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
+def create_rounded_text_image(text, output_path, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
+    """
+    Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
+    bg_color может быть названием цвета или hex.
+    """
+
+    # Настройка шрифта (используем системный шрифт по умолчанию, если путь не передан)
+    try:
+        if font_path and os.path.exists(font_path):
+            font = ImageFont.truetype(font_path, font_size)
+        else:
+            # Пытаемся взять стандартный шрифт (DejaVuSans или Arial в зависимости от ОС)
+            font = ImageFont.truetype("arial.ttf", font_size)
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Создаем временное изображение, чтобы замерить размер текста
+    temp_img = Image.new("RGBA", (1, 1))
+    draw = ImageDraw.Draw(temp_img)
+
+    # Замеряем текст (bbox возвращает (left, top, right, bottom))
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    # Добавляем отступы (padding)
+    padding = 20
+    width = text_width + (padding * 2)
+    height = text_height + (padding * 2)
+
+    # Создаем итоговое изображение с прозрачностью (RGBA)
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(image)
+
+    # Рисуем закругленный прямоугольник
+    draw.rounded_rectangle(
+        [(0, 0), (width, height)],
+        radius=radius,
+        fill=bg_color
+    )
+
+    # Рисуем текст по центру
+    text_x = padding
+    text_y = padding
+
+    # Центрирование текста внутри блока
+    text_x = (width - text_width) / 2
+
+    draw.text((text_x, text_y), text, font=font, fill=text_color)
+
+    # Сохраняем как PNG
+    image.save(output_path)
+    return output_path
+
+
+def add_text_with_rounded_box(input_video, output_video, text, font_path=None):
+    logging.info("Генерирую подложку с закруглением...")
+
+    # Имя временной картинки
+    overlay_path = "temp_rounded_text.png"
+
+    try:
+        # 1. Генерируем картинку с помощью Python
+        create_rounded_text_image(
+            text=text,
+            output_path=overlay_path,
+            font_path=font_path,
+            font_size=35,
+            bg_color="black", # Можно сделать (0,0,0, 180) для прозрачности в Pillow RGBA
+            text_color="white",
+            radius=20
+        )
+
+        # 2. Команда FFmpeg для наложения картинки
+        cmd = [
+            FFMPEG_PATH, '-i', input_video, '-i', overlay_path,
+            '-filter_complex',
+            "[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H*0.8",
+            '-c:a', 'copy',
+            '-y', output_video
+        ]
+
+        logging.debug(f"Команда: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
+
+        if result.returncode != 0:
+            logging.error(f"FFmpeg ошибка: {result.stderr}")
+            return False
+
+        return True
+
+    except Exception as e:
+        logging.error(f"Ошибка: {e}")
+        return False
+    finally:
+        # Удаляем временную картинку
+        if os.path.exists(overlay_path):
+            os.remove(overlay_path)
+
+
 def process_video(input_path, output_path, text):
     """Обрабатываем одно видео"""
     try:
@@ -276,7 +376,7 @@ def process_video(input_path, output_path, text):
             input_path = temp_file
 
         # Добавляем текст
-        if add_text_with_ffmpeg(input_path, output_path, text):
+        if add_text_with_rounded_box(input_path, output_path, text):
             logging.info(f"Видео готово")
 
             # Удаляем временный файл если он был создан
