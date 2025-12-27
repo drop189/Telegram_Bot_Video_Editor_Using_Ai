@@ -227,9 +227,8 @@ def add_text_with_ffmpeg(input_file, output_file, text):
         cmd = [
             FFMPEG_PATH, '-i', input_file,
             '-vf', f"drawtext=text='{text}':"
-                   f"fontcolor=white:"  
+                   f"fontcolor=white:box=1:boxcolor=black@0.7:"  
                    f"fontsize=min(35, h*0.04):"
-                   f"box=1:boxcolor=black@0.7:"  
                    f"boxborderw=15:"
                    f"x=(w-text_w)/2:"
                    f"y=h*0.8:"  
