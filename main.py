@@ -335,9 +335,14 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
 
         # 2. Команда FFmpeg для наложения картинки
         cmd = [
-            FFMPEG_PATH, '-i', input_video, '-i', overlay_path,
+            FFMPEG_PATH,
+            '-i', input_video,
+            '-framerate', '25',
+            '-i', overlay_path,
             '-filter_complex',
-            "[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H*0.8",
+            "[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H*0.8,format=yuv420p",
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
             '-c:a', 'copy',
             '-y', output_video
         ]
