@@ -217,21 +217,30 @@ def convert_mov_to_mp4(input_file, output_file):
 def add_text_with_ffmpeg(input_file, output_file, text):
     """Добавляем текст на видео используя только FFmpeg"""
     logging.info(f"Добавляю текст ({len(text)} символов): '{text}'")
-    try:
-        # Экранируем специальные символы для FFmpeg
-        text = text.replace('\\', '\\\\')
-        text = text.replace(':', '\\:')
-        text = text.replace("'", "'\\''")
 
-        # Команда FFmpeg для добавления текста
+    # Создаем уникальное имя для временного текстового файла
+    text_file_name = f"temp_text_{os.getpid()}.txt"
+
+    try:
+        # 1. Записываем текст в файл с кодировкой UTF-8
+        # Это решает проблемы с кириллицей и символами типа длинного тире
+        with open(text_file_name, "w", encoding="utf-8") as f:
+            f.write(text)
+
+        # 2. Формируем команду, указывая FFmpeg читать текст из файла
         cmd = [
             FFMPEG_PATH, '-i', input_file,
-            '-vf', "[in]drawtext=text='Текст 1':fontfile=arial.ttf:fontsize=30:x=10:y=10:enable='between(t,0,5)', drawtext=text='Текст 2':fontfile=arial.ttf:fontsize=25:x=100:y=100:enable='between(t,5,10)'[out]",
+            '-vf', f"drawtext=textfile='{text_file_name}':"
+                   f"fontcolor=white:"
+                   f"fontsize=min(35, h*0.04):"
+                   f"box=1:boxcolor=black@0.7:boxborderw=15:"
+                   f"x=(w-text_w)/2:y=h*0.8:"
+                   f"text_align=center:fix_bounds=true",
             '-c:a', 'copy',
             '-y', output_file
         ]
 
-        logging.debug(f"Выполняем команду: {' '.join(cmd)}")
+        # 3. Запускаем процесс
         result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
 
         if result.returncode != 0:
@@ -243,6 +252,10 @@ def add_text_with_ffmpeg(input_file, output_file, text):
     except Exception as e:
         logging.error(f"Ошибка при добавлении текста: {e}")
         return False
+    finally:
+        # 4. Удаляем временный файл
+        if os.path.exists(text_file_name):
+            os.remove(text_file_name)
 
 
 def process_video(input_path, output_path, text):
