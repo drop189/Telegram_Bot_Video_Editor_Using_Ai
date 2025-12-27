@@ -1,8 +1,18 @@
 FROM python:3.11-slim
 
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    libjpeg8-dev \
+    zlib1g-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libwebp-dev \
+    libtiff5-dev \
+    cabextract \
+    ttf-mscorefonts-installer \
+    && fc-cache -fv \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

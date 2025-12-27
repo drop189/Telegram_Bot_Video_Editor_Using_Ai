@@ -314,7 +314,7 @@ def create_rounded_text_image(text, output_path, font_path=None, font_size=35, b
     return output_path
 
 
-def add_text_with_rounded_box(input_video, output_video, text, font_path=None):
+def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"):
     logging.info("Генерирую подложку с закруглением...")
 
     # Имя временной картинки
@@ -327,8 +327,8 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path=None):
             output_path=overlay_path,
             font_path=font_path,
             font_size=35,
-            bg_color="black", # Можно сделать (0,0,0, 180) для прозрачности в Pillow RGBA
-            text_color="white",
+            bg_color="white",
+            text_color="black",
             radius=20
         )
 
