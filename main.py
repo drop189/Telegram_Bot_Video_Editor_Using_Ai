@@ -226,11 +226,13 @@ def add_text_with_ffmpeg(input_file, output_file, text):
         # Команда FFmpeg для добавления текста
         cmd = [
             FFMPEG_PATH, '-i', input_file,
-            '-vf', f"drawtext=text='{text}':fontcolor=black:"
+            '-vf', f"drawtext=text='{text}':"
+                   f"fontcolor=white:"  
                    f"fontsize=min(35, h*0.04):"
-                   f"box=1:boxcolor=white@1:boxborderw=20:"
+                   f"box=1:boxcolor=black@0.7:"  
+                   f"boxborderw=15:"
                    f"x=(w-text_w)/2:"
-                   f"y=h*0.8-text_h/2:"
+                   f"y=h*0.8:"  
                    f"text_align=center:"
                    f"fix_bounds=true",
             '-c:a', 'copy',
