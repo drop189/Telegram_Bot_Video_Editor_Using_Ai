@@ -6,6 +6,7 @@ import random
 import requests
 import json
 import logging
+import config
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
