@@ -215,29 +215,21 @@ def convert_mov_to_mp4(input_file, output_file):
 
 
 def add_text_with_ffmpeg(input_file, output_file, text):
-    """Добавляем текст на видео через временный файл"""
-    logging.info(f"Добавляю текст ({len(text)} символов)")
-
-    # Имя временного файла для текста
-    text_file_path = "temp_text.txt"
-
+    """Добавляем текст на видео используя только FFmpeg"""
+    logging.info(f"Добавляю текст ({len(text)} символов): '{text}'")
     try:
-        # 1. Сохраняем текст в файл (кодировка UTF-8 обязательна для кириллицы)
-        with open(text_file_path, "w", encoding="utf-8") as f:
-            f.write(text)
+        # Экранируем специальные символы для FFmpeg
+        text = text.replace('\\', '\\\\')
+        text = text.replace(':', '\\:')
+        text = text.replace("'", "'\\''")
 
-        # 2. Формируем команду FFmpeg
-
+        # Команда FFmpeg для добавления текста
         cmd = [
             FFMPEG_PATH, '-i', input_file,
-            '-vf', f"drawtext=textfile='{text_file_path}':"  
-                   f"fontcolor=black:"
-                   f"fontsize=35:"
+            '-vf', f"drawtext=text='{text}':fontcolor=black:fontsize=35:"
                    f"box=1:boxcolor=white@1:boxborderw=20:"
-                   f"x=(w-text_w)/2:"
-                   f"y=h*0.8-text_h/2::"
-                   f"text_align=center:"
-                   f"fix_bounds=true",
+                   f"fontfile='C\\:/Windows/Fonts/arial.ttf':"
+                   f"x=(w-text_w)/2:y=h-text_h-400",
             '-c:a', 'copy',
             '-y', output_file
         ]
@@ -254,10 +246,6 @@ def add_text_with_ffmpeg(input_file, output_file, text):
     except Exception as e:
         logging.error(f"Ошибка при добавлении текста: {e}")
         return False
-    finally:
-        # 3. Обязательно удаляем временный файл
-        if os.path.exists(text_file_path):
-            os.remove(text_file_path)
 
 
 def process_video(input_path, output_path, text):
