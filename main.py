@@ -231,11 +231,12 @@ def add_text_with_ffmpeg(input_file, output_file, text):
         cmd = [
             FFMPEG_PATH, '-i', input_file,
             '-vf', f"drawtext=textfile='{text_file_name}':"
-                   f"fontcolor=white:"
+                   f"fontcolor=black:"
                    f"fontsize=35:"
-                   f"box=1:boxcolor=black@0.7:boxborderw=15:"
+                   f"box=1:boxcolor=white@1:boxborderw=15:"
                    f"x=(w-text_w)/2:y=h*0.8:"
-                   f"text_align=center:fix_bounds=true",
+                   f"shadowcolor=gray:shadowx=2:shadowy=2:"
+                   f"line_spacing=10:text_align=center:fix_bounds=true",
             '-c:a', 'copy',
             '-y', output_file
         ]
