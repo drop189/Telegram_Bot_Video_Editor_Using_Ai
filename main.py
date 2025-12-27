@@ -306,6 +306,7 @@ def create_rounded_text_image(text, output_path, font_path=None, font_size=35, b
 
     # Центрирование текста внутри блока
     text_x = (width - text_width) / 2
+    text_y = (width - text_width) / 2
 
     draw.text((text_x, text_y), text, font=font, fill=text_color)
 
