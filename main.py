@@ -261,26 +261,22 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
-def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
+def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, text_color="black", bg_color="white"):
     """
-    Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
+    Создает PNG с прозрачным фоном, текстом и ОБВОДКОЙ вокруг букв (без подложки).
     """
-
-    # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
+    # Максимальная ширина текста (90% от ширины видео)
     max_width = int(video_width * 0.9)
 
     # Размер шрифта (5% от высоты видео)
     font_size = int(video_height * 0.05)
-
-    # Ограничим минимальный размер шрифта, чтобы на очень коротких видео он не исчез
     if font_size < 20: font_size = 20
 
-    # Настройка шрифта (используем системный шрифт по умолчанию, если путь не передан)
+    # Настройка шрифта
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
         else:
-            # Пытаемся взять стандартный шрифт (DejaVuSans или Arial в зависимости от ОС)
             font = ImageFont.truetype("arial.ttf", font_size)
     except IOError:
         font = ImageFont.load_default()
@@ -301,37 +297,39 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     # Объединяем строки через перенос строки
     final_text = '\n'.join(lines)
 
-    # Замеряем текст
-    bbox = draw.multiline_textbbox((0, 0), final_text, font=font, spacing=10)
+    stroke_width = 5
+    temp_real = Image.new("RGBA", (max_width, 2000), (255, 255, 255, 0))
+    draw_real = ImageDraw.Draw(temp_real)
+    draw_real.multiline_text((0, 0), final_text, font=font, fill=text_color, stroke_fill=bg_color, stroke_width=stroke_width, spacing=10)
+    bbox = draw_real.multiline_textbbox((0, 0), final_text, font=font, stroke_width=stroke_width, spacing=10)
+
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
 
-    # Добавляем отступы (padding)
-    padding = int(video_width * 0.02)
-    if padding < 15: padding = 15
+    # Отступы
+    padding = stroke_width + 5
     width = int(text_width + (padding * 2))
     height = int(text_height + (padding * 2))
 
-    # Создаем итоговое изображение с прозрачностью (RGBA)
+    # Создаем итоговое изображение
     image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
-    radius = int(font_size / 2) #(test)
-
-    # Рисуем закругленный прямоугольник
-    draw.rounded_rectangle(
-        [(0, 0), (width, height)],
-        radius=radius,
-        fill=bg_color
+    # РИСУЕМ ТЕКСТ С ОБВОДКОЙ
+    draw.multiline_text(
+        (padding, padding - (font_size * 0.2)), # Сдвиг вверх для выравнивания
+        final_text,
+        font=font,
+        fill=text_color,
+        stroke_fill=bg_color,
+        stroke_width=stroke_width,
+        spacing=10,
+        align="left"
     )
-
-
-    draw.multiline_text((padding, padding - font_size * 0.1), final_text, font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
 
     # Сохраняем как PNG
     image.save(output_path)
     return output_path
-
 
 def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"):
     logging.info("Генерирую подложку с закруглением...")
