@@ -350,10 +350,8 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
             video_width=v_width,
             video_height=v_height,
             font_path=font_path,
-            font_size=35, #deprecated
             bg_color="white",
-            text_color="black",
-            radius=20
+            text_color="black"
         )
 
         # 3. Команда FFmpeg для наложения картинки
