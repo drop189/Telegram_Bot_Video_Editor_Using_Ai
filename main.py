@@ -326,7 +326,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     )
 
 
-    draw.multiline_text((padding, padding), final_text, font=font, fill=text_color, align="center", spacing=10)
+    draw.multiline_text((padding, padding), final_text, anchor= "ms", font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
 
     # Сохраняем как PNG
     image.save(output_path)
@@ -367,7 +367,7 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
             '-framerate', '25',
             '-i', overlay_path,
             '-filter_complex',
-            f"[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H-h-{offset_bottom},format=yuv420p",
+            f"[1:v]format=rgba,colorchannelmixer=aa=1[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H-h-{offset_bottom},format=yuv420p",
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-c:a', 'copy',
