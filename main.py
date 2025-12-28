@@ -3,6 +3,8 @@ import sys
 import asyncio
 import subprocess
 import random
+import textwrap
+
 import requests
 import json
 import logging
@@ -259,11 +261,20 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
-def create_rounded_text_image(text, output_path, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
+def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
     """
     Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
     bg_color может быть названием цвета или hex.
     """
+
+    # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
+    max_width = int(video_width * 0.9)
+
+    # Размер шрифта (5% от высоты видео)
+    font_size = int(video_height * 0.05)
+
+    # Ограничим минимальный размер шрифта, чтобы на очень коротких видео он не исчез
+    if font_size < 20: font_size = 20
 
     # Настройка шрифта (используем системный шрифт по умолчанию, если путь не передан)
     try:
@@ -279,19 +290,34 @@ def create_rounded_text_image(text, output_path, font_path=None, font_size=35, b
     temp_img = Image.new("RGBA", (1, 1))
     draw = ImageDraw.Draw(temp_img)
 
-    # Замеряем текст (bbox возвращает (left, top, right, bottom))
-    bbox = draw.textbbox((0, 0), text, font=font)
+    # Получаем ширину символа примерно, чтобы посчитать кол-во символов в строке
+    avg_char_width = draw.textlength("x", font=font)
+    if avg_char_width == 0: avg_char_width = 1 # Защита от деления на ноль
+    chars_per_line = int(max_width / avg_char_width)
+
+    # Разбиваем текст на строки, которые влезают в max_width
+    lines = textwrap.wrap(text, width=chars_per_line)
+    if not lines: lines = [""] # На случай пустого текста
+
+    # Объединяем строки через перенос строки
+    final_text = '\n'.join(lines)
+
+    # Замеряем текст
+    bbox = draw.multiline_textbbox((0, 0), final_text, font=font, spacing=10)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
 
     # Добавляем отступы (padding)
-    padding = 20
+    padding = int(video_width * 0.02)
+    if padding < 15: padding = 15
     width = text_width + (padding * 2)
     height = text_height + (padding * 2)
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
     image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
+
+    radius = int(font_size / 2) #(test)
 
     # Рисуем закругленный прямоугольник
     draw.rounded_rectangle(
@@ -300,15 +326,8 @@ def create_rounded_text_image(text, output_path, font_path=None, font_size=35, b
         fill=bg_color
     )
 
-    # Рисуем текст по центру
-    text_x = padding
-    text_y = padding
 
-    # Центрирование текста внутри блока
-    text_x = (width - text_width) / 2
-    text_y = (width - text_width) / 2
-
-    draw.text((text_x, text_y), text, font=font, fill=text_color)
+    draw.multiline_text((padding, padding), final_text, font=font, fill="white", align="center", spacing=10)
 
     # Сохраняем как PNG
     image.save(output_path)
@@ -322,10 +341,17 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
     overlay_path = "temp_rounded_text.png"
 
     try:
-        # 1. Генерируем картинку с помощью Python
+
+        # 1. Получаем реальные размеры видео
+        v_width, v_height = get_video_dimensions(input_video)
+        logging.info(f"Размер видео: {v_width}x{v_height}")
+
+        # 2. Генерируем картинку с помощью Python
         create_rounded_text_image(
             text=text,
             output_path=overlay_path,
+            video_width=v_width,
+            video_height=v_height,
             font_path=font_path,
             font_size=35,
             bg_color="white",
@@ -333,14 +359,16 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
             radius=20
         )
 
-        # 2. Команда FFmpeg для наложения картинки
+        # 3. Команда FFmpeg для наложения картинки
+
+        offset_bottom = int(v_height * 0.05)
         cmd = [
             FFMPEG_PATH,
             '-i', input_video,
             '-framerate', '25',
             '-i', overlay_path,
             '-filter_complex',
-            "[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H*0.8,format=yuv420p",
+            f"[1:v]format=rgba,colorchannelmixer=aa=0.7[alpha];[0:v][alpha]overlay=x=(W-w)/2:y=H-h-{offset_bottom},format=yuv420p",
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-c:a', 'copy',
@@ -364,6 +392,27 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
         if os.path.exists(overlay_path):
             os.remove(overlay_path)
 
+def get_video_dimensions(video_path):
+    """
+    Возвращает размеры (width, height) видео.
+    """
+    cmd = [
+        FFMPEG_PATH.replace("ffmpeg", "ffprobe"),
+        '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=width,height',
+        '-of', 'csv=s=x:p=0',
+        video_path
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        width, height = map(int, result.stdout.strip().split('x'))
+        return width, height
+    except Exception as e:
+        logging.error(f"Не удалось получить размер видео: {e}")
+        # Возвращаем значения по умолчанию (FullHD), если не получилось
+        return 1920, 1080
 
 def process_video(input_path, output_path, text):
     """Обрабатываем одно видео"""
