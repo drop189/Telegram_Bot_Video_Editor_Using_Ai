@@ -342,7 +342,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     max_box_width = max(item["box_w"] for item in line_infos)
 
     # Высота всего изображения = сумма высот всех строк + отступы между строками
-    line_gap = 5 # Расстояние между подложками разных строк (test 0)
+    line_gap = 10 # Расстояние между подложками разных строк
     total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1) * line_gap
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
@@ -406,14 +406,15 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
         # Соединяем (r1_x1, r1_y2) с (r2_x1, r2_y1)
 
+        pxw = 1
         if r1_x1 == r2_x1: # Если выравнивание по левому краю совпадает
-            # Рисуем линию шириной 5px от низа верхнего до верха нижнего
-            draw.rectangle([(r1_x1, r1_y2), (r1_x1 + 5, r2_y1)], fill=bg_color)
+            # Рисуем линию шириной pxw px от низа верхнего до верха нижнего
+            draw.rectangle([(r1_x1, r1_y2), (r1_x1 + pxw, r2_y1)], fill=bg_color)
 
         # ПРАВАЯ щель
         if r1_x2 == r2_x2:
-            # r1_x2 - 5, чтобы линия была шириной 5px внутрь прямоугольника
-            draw.rectangle([(r1_x2 - 5, r1_y2), (r1_x2, r2_y1)], fill=bg_color)
+            # r1_x2 - 5, чтобы линия была шириной pxw px внутрь прямоугольника
+            draw.rectangle([(r1_x2 - pxw, r1_y2), (r1_x2, r2_y1)], fill=bg_color)
 
     # Сохраняем
     image.save(output_path)
