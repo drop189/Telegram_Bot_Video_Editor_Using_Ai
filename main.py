@@ -357,7 +357,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         draw.text((text_x, text_y), txt, font=font, fill=text_color)
 
         # Сдвигаем Y для следующей строки
-        current_y += box_h + line_gap
+        current_y += box_h
 
     # Сохраняем
     image.save(output_path)
