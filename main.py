@@ -324,7 +324,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         stroke_fill=bg_color,
         stroke_width=stroke_width,
         spacing=10,
-        align="left"
+        align="center"
     )
 
     # Сохраняем как PNG
