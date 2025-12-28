@@ -261,27 +261,11 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
-def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white@0.7", text_color="black"):
+def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white", text_color="black"):
     """
     Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
     """
 
-    # --- 1. Парсинг цвета (чтобы работала прозрачность типа white@0.7) ---
-    if isinstance(bg_color, str):
-        if "@" in bg_color:
-            c_name, alpha = bg_color.split("@")
-            alpha = int(float(alpha) * 255)
-        else:
-            c_name, alpha = bg_color, 255
-
-        if c_name == "white": bg_rgb = (255, 255, 255)
-        elif c_name == "black": bg_rgb = (0, 0, 0)
-        else: bg_rgb = (200, 200, 200)
-        bg_color = bg_rgb + (alpha,)
-
-    if isinstance(text_color, str):
-        if text_color == "black": text_color = (0, 0, 0, 255)
-        else: text_color = (255, 255, 255, 255)
 
     # Максимальная ширина текста (90% от ширины видео)
     max_width = int(video_width * 0.9)
@@ -363,12 +347,12 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         x = (max_box_width - box_w) // 2
 
         # Сохраняем координаты текущего прямоугольника: (x1, y1, x2, y2)
-        rect_coords = (x, current_y, x + box_w, current_y + box_h)
-        rectangles_cords.append(rect_coords)
+        rect_cords = (x, current_y, x + box_w, current_y + box_h)
+        rectangles_cords.append(rect_cords)
 
         # Рисуем сам прямоугольник
         draw.rounded_rectangle(
-            rect_coords,
+            rect_cords,
             radius=radius,
             fill=bg_color
         )
@@ -393,7 +377,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         # Сдвигаем Y
         current_y += box_h
 
-    # Проходим по парам прямоугольников и соединяем их уголки
+    # Проходим по парам прямоугольников и соединяем их уголки (не понимаю, работает ли)
     for i in range(len(rectangles_cords) - 1):
         r1 = rectangles_cords[i] # Верхний прямоугольник
         r2 = rectangles_cords[i + 1] # Нижний прямоугольник
