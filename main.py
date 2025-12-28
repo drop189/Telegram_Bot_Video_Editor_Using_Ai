@@ -261,7 +261,7 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
-def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white@0.7", text_color="black"):
+def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
     """
     Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
     """
@@ -323,14 +323,15 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     # Находим самую широкую строку, чтобы задать ширину всего изображения
     max_box_width = max(item["box_w"] for item in line_infos)
 
-    # Высота всего изображения = сумма высот всех строк + без отступа
-    total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1)
+    # Высота всего изображения = сумма высот всех строк + отступы между строками
+    line_gap = 10 # Расстояние между подложками разных строк (test 0)
+    total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1) * line_gap
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
     image = Image.new("RGBA", (max_box_width, total_height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
-    radius = int(font_size / 2)
+    radius = int(font_size / 2) #(test)
     current_y = 0
 
     for item in line_infos:
@@ -382,8 +383,10 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
             video_width=v_width,
             video_height=v_height,
             font_path=font_path,
+            font_size=35, #deprecated
             bg_color="white",
-            text_color="black"
+            text_color="black",
+            radius=20
         )
 
         # 3. Команда FFmpeg для наложения картинки
