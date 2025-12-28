@@ -309,8 +309,8 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     # Добавляем отступы (padding)
     padding = int(video_width * 0.02)
     if padding < 15: padding = 15
-    width = text_width + (padding * 2)
-    height = text_height + (padding * 2)
+    width = int(text_width + (padding * 2))
+    height = int(text_height + (padding * 2))
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
     image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
@@ -326,7 +326,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     )
 
 
-    draw.multiline_text((padding, padding - font_size), final_text, font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
+    draw.multiline_text((padding, padding - font_size * 0.05), final_text, font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
 
     # Сохраняем как PNG
     image.save(output_path)
