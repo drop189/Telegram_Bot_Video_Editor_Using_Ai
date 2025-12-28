@@ -324,21 +324,20 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     max_box_width = max(item["box_w"] for item in line_infos)
 
     # Высота всего изображения = сумма высот всех строк + отступы между строками
-    line_gap = 10 # Расстояние между подложками разных строк (test 0)
+    line_gap = 1 # Расстояние между подложками разных строк (test 0)
     total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1) * line_gap
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
     image = Image.new("RGBA", (max_box_width, total_height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
-    radius = int(font_size / 2) #(test)
+    radius = int(font_size / 2)
     current_y = 0
 
     for item in line_infos:
         box_w = item["box_w"]
         box_h = item["box_h"]
         txt = item["text"]
-        txt_w = item["text_w"]
 
         # Вычисляем X, чтобы подложка была по центру общей картинки
         x = (max_box_width - box_w) // 2
