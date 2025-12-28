@@ -342,7 +342,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     max_box_width = max(item["box_w"] for item in line_infos)
 
     # Высота всего изображения = сумма высот всех строк + отступы между строками
-    line_gap = 10 # Расстояние между подложками разных строк
+    line_gap = 100 # Расстояние между подложками разных строк
     total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1) * line_gap
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
