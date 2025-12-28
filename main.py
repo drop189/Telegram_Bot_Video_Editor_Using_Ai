@@ -263,27 +263,10 @@ def add_text_with_ffmpeg(input_file, output_file, text):
 
 def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white@0.7", text_color="black"):
     """
-    Создает PNG с прозрачным фоном, текстом и общей закругленной подложкой.
+    Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
     """
 
-    # --- 1. Парсинг цвета (чтобы работала прозрачность типа white@0.7) ---
-    if isinstance(bg_color, str):
-        if "@" in bg_color:
-            c_name, alpha = bg_color.split("@")
-            alpha = int(float(alpha) * 255)
-        else:
-            c_name, alpha = bg_color, 255
-
-        if c_name == "white": bg_rgb = (255, 255, 255)
-        elif c_name == "black": bg_rgb = (0, 0, 0)
-        else: bg_rgb = (200, 200, 200)
-        bg_color = bg_rgb + (alpha,)
-
-    if isinstance(text_color, str):
-        if text_color == "black": text_color = (0, 0, 0, 255)
-        else: text_color = (255, 255, 255, 255)
-
-    # Максимальная ширина текста (90% от ширины видео)
+    # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
     max_width = int(video_width * 0.9)
 
     # Размер шрифта (4% от высоты видео)
@@ -333,7 +316,6 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
             "text": line,
             "box_w": box_width,
             "box_h": box_height,
-            "bbox": bbox,
             "text_w": l_width,
             "text_h": l_height
         })
@@ -351,69 +333,31 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     radius = int(font_size / 2)
     current_y = 0
 
-    # --- ИЗМЕНЕННАЯ ЛОГИКА РИСОВАНИЯ ---
-
-    # Для начала нарисуем все прямоугольники и сразу сохраним их координаты
-    rectangles_cords = []
-
-    for i, item in enumerate(line_infos):
+    for item in line_infos:
         box_w = item["box_w"]
         box_h = item["box_h"]
-
-        # X координата (центрирование)
-        x = (max_box_width - box_w) // 2
-
-        # Сохраняем координаты текущего прямоугольника: (x1, y1, x2, y2)
-        rect_coords = (x, current_y, x + box_w, current_y + box_h)
-        rectangles_cords.append(rect_coords)
-
-        # Рисуем сам прямоугольник
-        draw.rounded_rectangle(
-            rect_coords,
-            radius=radius,
-            fill=bg_color
-        )
-
-        # Рисуем текст (логика осталась прежней)
         txt = item["text"]
-        bbox = item["bbox"]
+        txt_w = item["text_w"]
 
         # Вычисляем X, чтобы подложка была по центру общей картинки
         x = (max_box_width - box_w) // 2
 
-        box_center_y = current_y + (box_h / 2)
-        text_center_y = (bbox[1] + bbox[3]) / 2
-        text_offset_y = text_center_y
+        # Рисуем подложку для текущей строки
+        draw.rounded_rectangle(
+            [(x, current_y), (x + box_w, current_y + box_h)],
+            radius=radius,
+            fill=bg_color
+        )
 
         # Рисуем текст внутри подложки
+        # Сдвигаем чуть вверх на 0.1 размера шрифта, чтобы убрать визуальный отступ сверху букв
         text_x = x + padding_x
-        text_y = box_center_y - text_offset_y + (font_size * 0.1)
+        text_y = current_y + padding_y - (font_size * 0.1)
 
         draw.text((text_x, text_y), txt, font=font, fill=text_color)
 
-        # Сдвигаем Y
-        current_y += box_h
-
-    # Проходим по парам прямоугольников и соединяем их уголки
-    for i in range(len(rectangles_cords) - 1):
-        r1 = rectangles_cords[i] # Верхний прямоугольник
-        r2 = rectangles_cords[i + 1] # Нижний прямоугольник
-
-        # Координаты нижних углов верхнего прямоугольника
-        r1_x1, r1_y1, r1_x2, r1_y2 = r1
-        # Координаты верхних углов нижнего прямоугольника
-        r2_x1, r2_y1, r2_x2, r2_y2 = r2
-
-        # Соединяем (r1_x1, r1_y2) с (r2_x1, r2_y1)
-
-        if r1_x1 == r2_x1: # Если выравнивание по левому краю совпадает
-            # Рисуем линию шириной 1px от низа верхнего до верха нижнего
-            draw.rectangle([(r1_x1, r1_y2), (r1_x1 + 1, r2_y1)], fill=bg_color)
-
-        # ПРАВАЯ щель
-        if r1_x2 == r2_x2:
-            # r1_x2 - 1, чтобы линия была шириной 1px внутрь прямоугольника
-            draw.rectangle([(r1_x2 - 1, r1_y2), (r1_x2, r2_y1)], fill=bg_color)
+        # Сдвигаем Y для следующей строки
+        current_y += box_h + line_gap
 
     # Сохраняем
     image.save(output_path)
