@@ -406,14 +406,14 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
         # Соединяем (r1_x1, r1_y2) с (r2_x1, r2_y1)
 
-        pxw = 1
+        pxw = 50
         if r1_x1 == r2_x1: # Если выравнивание по левому краю совпадает
             # Рисуем линию шириной pxw px от низа верхнего до верха нижнего
             draw.rectangle([(r1_x1, r1_y2), (r1_x1 + pxw, r2_y1)], fill=bg_color)
 
         # ПРАВАЯ щель
         if r1_x2 == r2_x2:
-            # r1_x2 - 5, чтобы линия была шириной pxw px внутрь прямоугольника
+            # r1_x2 - pxw, чтобы линия была шириной pxw px внутрь прямоугольника
             draw.rectangle([(r1_x2 - pxw, r1_y2), (r1_x2, r2_y1)], fill=bg_color)
 
     # Сохраняем
