@@ -316,6 +316,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
             "text": line,
             "box_w": box_width,
             "box_h": box_height,
+            "bbox": bbox,
             "text_w": l_width,
             "text_h": l_height
         })
@@ -337,10 +338,15 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         box_w = item["box_w"]
         box_h = item["box_h"]
         txt = item["text"]
-        txt_w = item["text_w"]
+        bbox = item["bbox"]
 
         # Вычисляем X, чтобы подложка была по центру общей картинки
         x = (max_box_width - box_w) // 2
+
+        box_center_y = current_y + (box_h / 2)
+        text_center_y = (bbox[1] + bbox[3]) / 2
+        text_offset_y = text_center_y
+
 
         # Рисуем подложку для текущей строки
         draw.rounded_rectangle(
@@ -350,9 +356,8 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         )
 
         # Рисуем текст внутри подложки
-        # Сдвигаем чуть вверх на 0.1 размера шрифта, чтобы убрать визуальный отступ сверху букв
         text_x = x + padding_x
-        text_y = current_y + padding_y - (font_size * 0.1)
+        text_y = box_center_y - text_offset_y
 
         draw.text((text_x, text_y), txt, font=font, fill=text_color)
 
