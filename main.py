@@ -326,7 +326,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     )
 
 
-    draw.multiline_text((padding, padding), final_text, anchor= "ms", font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
+    draw.multiline_text((padding, padding), final_text, font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
 
     # Сохраняем как PNG
     image.save(output_path)
