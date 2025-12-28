@@ -348,7 +348,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
     # 2. (Опционально) Рисуем тонкие линии-разделители, чтобы текст не "поплыл" визуально
     # Цвет разделителя будет чуть темнее или прозрачнее основного фона
-    separator_color = bg_color[:3] + (max(0, bg_color[3] - 50),) # Уменьшаем альфа-канал для полоски
+    separator_color = bg_color[:3] # Уменьшаем альфа-канал для полоски
 
     temp_draw_y = 0
     for i, item in enumerate(line_infos):
