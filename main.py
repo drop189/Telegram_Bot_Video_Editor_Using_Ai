@@ -357,7 +357,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
         # Рисуем текст внутри подложки
         text_x = x + padding_x
-        text_y = box_center_y - text_offset_y
+        text_y = box_center_y - text_offset_y - (font_size * 0.1)
 
         draw.text((text_x, text_y), txt, font=font, fill=text_color)
 
