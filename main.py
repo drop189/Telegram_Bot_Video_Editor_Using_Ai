@@ -297,7 +297,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     # Объединяем строки через перенос строки
     final_text = '\n'.join(lines)
 
-    stroke_width = 5
+    stroke_width = 100
     temp_real = Image.new("RGBA", (max_width, 2000), (255, 255, 255, 0))
     draw_real = ImageDraw.Draw(temp_real)
     draw_real.multiline_text((0, 0), final_text, font=font, fill=text_color, stroke_fill=bg_color, stroke_width=stroke_width, spacing=10)
