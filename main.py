@@ -264,7 +264,6 @@ def add_text_with_ffmpeg(input_file, output_file, text):
 def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, font_size=35, bg_color="white@0.7", text_color="black", radius=20):
     """
     Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
-    bg_color может быть названием цвета или hex.
     """
 
     # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
@@ -327,7 +326,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     )
 
 
-    draw.multiline_text((padding, padding), final_text, font=font, fill="white", align="center", spacing=10)
+    draw.multiline_text((padding, padding), final_text, font=font, fill=text_color, align="center", spacing=10)
 
     # Сохраняем как PNG
     image.save(output_path)
@@ -353,7 +352,7 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
             video_width=v_width,
             video_height=v_height,
             font_path=font_path,
-            font_size=35,
+            font_size=35, #deprecated
             bg_color="white",
             text_color="black",
             radius=20
@@ -361,7 +360,7 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
 
         # 3. Команда FFmpeg для наложения картинки
 
-        offset_bottom = int(v_height * 0.05)
+        offset_bottom = int(v_height * 0.2)
         cmd = [
             FFMPEG_PATH,
             '-i', input_video,
