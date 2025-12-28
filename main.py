@@ -263,7 +263,7 @@ def add_text_with_ffmpeg(input_file, output_file, text):
 
 def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white@0.7", text_color="black"):
     """
-    Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
+    Создает PNG с прозрачным фоном, текстом и общей закругленной подложкой.
     """
 
     # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
@@ -332,8 +332,39 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     draw = ImageDraw.Draw(image)
 
     radius = int(font_size / 2)
-    current_y = 0
 
+    container_y = 0
+    max_line_width = max(item["box_w"] for item in line_infos)
+
+    # Пересчитываем X, чтобы общий блок был по центру макета
+    container_x = (max_box_width - max_line_width) // 2
+
+    # Рисуем ОДИН большой закругленный прямоугольник на всю высоту
+    draw.rounded_rectangle(
+        [(container_x, container_y), (container_x + max_line_width, container_y + total_height)],
+        radius=radius,
+        fill=bg_color
+    )
+
+    # 2. (Опционально) Рисуем тонкие линии-разделители, чтобы текст не "поплыл" визуально
+    # Цвет разделителя будет чуть темнее или прозрачнее основного фона
+    separator_color = bg_color[:3] + (max(0, bg_color[3] - 50),) # Уменьшаем альфа-канал для полоски
+
+    temp_draw_y = 0
+    for i, item in enumerate(line_infos):
+        # Если это не последняя строка, рисуем линию под ней
+        if i < len(line_infos) - 1:
+            line_bottom_y = temp_draw_y + item["box_h"]
+            # Рисуем линию от левого края подложки до правого
+            draw.line(
+                [(container_x, line_bottom_y), (container_x + max_line_width, line_bottom_y)],
+                fill=separator_color,
+                width=1
+            )
+        temp_draw_y += item["box_h"] + 1
+
+
+    current_y = 0
     for item in line_infos:
         box_w = item["box_w"]
         box_h = item["box_h"]
@@ -347,22 +378,14 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         text_center_y = (bbox[1] + bbox[3]) / 2
         text_offset_y = text_center_y
 
-
-        # Рисуем подложку для текущей строки
-        draw.rounded_rectangle(
-            [(x, current_y), (x + box_w, current_y + box_h)],
-            radius=radius,
-            fill=bg_color
-        )
-
         # Рисуем текст внутри подложки
         text_x = x + padding_x
         text_y = box_center_y - text_offset_y + (font_size * 0.1)
 
         draw.text((text_x, text_y), txt, font=font, fill=text_color)
 
-        # Сдвигаем Y для следующей строки
-        current_y += box_h
+        # Сдвигаем Y для следующей строки (учитывая отступ +1, как в total_height)
+        current_y += box_h + 1
 
     # Сохраняем
     image.save(output_path)
