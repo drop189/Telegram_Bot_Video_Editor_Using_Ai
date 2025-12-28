@@ -269,18 +269,20 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     # Максимальная ширина текста (90% от ширины видео, чтобы не влезало в края)
     max_width = int(video_width * 0.9)
 
-    # Размер шрифта (5% от высоты видео)
-    font_size = int(video_height * 0.05)
-
-    # Ограничим минимальный размер шрифта, чтобы на очень коротких видео он не исчез
+    # Размер шрифта (4% от высоты видео)
+    font_size = int(video_height * 0.04)
     if font_size < 20: font_size = 20
 
-    # Настройка шрифта (используем системный шрифт по умолчанию, если путь не передан)
+    # Отступы (отступ текста от края подложки)
+    padding_x = int(video_width * 0.02)
+    if padding_x < 15: padding_x = 15
+    padding_y = 10
+
+    # 2. Загрузка шрифта
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
         else:
-            # Пытаемся взять стандартный шрифт (DejaVuSans или Arial в зависимости от ОС)
             font = ImageFont.truetype("arial.ttf", font_size)
     except IOError:
         font = ImageFont.load_default()
@@ -296,42 +298,71 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
     # Разбиваем текст на строки, которые влезают в max_width
     lines = textwrap.wrap(text, width=chars_per_line)
-    if not lines: lines = [""] # На случай пустого текста
+    if not lines: lines = [""]
 
-    # Объединяем строки через перенос строки
-    final_text = '\n'.join(lines)
+    line_infos = []
+    for line in lines:
+        # Замеряем размеры строки
+        bbox = draw.textbbox((0, 0), line, font=font)
+        l_width = bbox[2] - bbox[0]
+        l_height = bbox[3] - bbox[1]
 
-    # Замеряем текст
-    bbox = draw.multiline_textbbox((0, 0), final_text, font=font, spacing=10)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
 
-    # Добавляем отступы (padding)
-    padding = int(video_width * 0.02)
-    if padding < 15: padding = 15
-    width = int(text_width + (padding * 2))
-    height = int(text_height + (padding * 2))
+        box_width = l_width + (padding_x * 2)
+        box_height = l_height + (padding_y * 2)
+
+        # Сохраняем информацию о строке
+        line_infos.append({
+            "text": line,
+            "box_w": box_width,
+            "box_h": box_height,
+            "text_w": l_width,
+            "text_h": l_height
+        })
+
+    # Находим самую широкую строку, чтобы задать ширину всего изображения
+    max_box_width = max(item["box_w"] for item in line_infos)
+
+    # Высота всего изображения = сумма высот всех строк + отступы между строками
+    line_gap = 10 # Расстояние между подложками разных строк (test 0)
+    total_height = sum(item["box_h"] for item in line_infos) + (len(lines) - 1) * line_gap
 
     # Создаем итоговое изображение с прозрачностью (RGBA)
-    image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    image = Image.new("RGBA", (max_box_width, total_height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
     radius = int(font_size / 2) #(test)
+    current_y = 0
 
-    # Рисуем закругленный прямоугольник
-    draw.rounded_rectangle(
-        [(0, 0), (width, height)],
-        radius=radius,
-        fill=bg_color
-    )
+    for item in line_infos:
+        box_w = item["box_w"]
+        box_h = item["box_h"]
+        txt = item["text"]
+        txt_w = item["text_w"]
 
+        # Вычисляем X, чтобы подложка была по центру общей картинки
+        x = (max_box_width - box_w) // 2
 
-    draw.multiline_text((padding, padding - font_size * 0.1), final_text, font=font, fill=text_color, align="center", spacing=10, stroke_width=0.1)
+        # Рисуем подложку для текущей строки
+        draw.rounded_rectangle(
+            [(x, current_y), (x + box_w, current_y + box_h)],
+            radius=radius,
+            fill=bg_color
+        )
 
-    # Сохраняем как PNG
+        # Рисуем текст внутри подложки
+        # Сдвигаем чуть вверх на 0.1 размера шрифта, чтобы убрать визуальный отступ сверху букв
+        text_x = x + padding_x
+        text_y = current_y + padding_y - (font_size * 0.1)
+
+        draw.text((text_x, text_y), txt, font=font, fill=text_color)
+
+        # Сдвигаем Y для следующей строки
+        current_y += box_h + line_gap
+
+    # Сохраняем
     image.save(output_path)
     return output_path
-
 
 def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"):
     logging.info("Генерирую подложку с закруглением...")
