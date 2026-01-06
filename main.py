@@ -34,22 +34,31 @@ ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] i
 SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
 
 # Настройка логирования
-get_env_name = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
-if get_env_name == "production":
-    # Конфигурация для production
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)],
-        force=True
-    )
-else:
-    # Конфигурация для debug или тестов
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)]
-    )
+env = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
+level = logging.INFO if env == "production" else logging.DEBUG
+
+logger = logging.getLogger()
+logger.setLevel(level)
+logger.handlers.clear()
+
+# stdout: DEBUG/INFO/WARNING
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.handlers[-1].setLevel(level)
+logger.handlers[-1].addFilter(lambda r: r.levelno < logging.ERROR)
+logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# stderr: ERROR/CRITICAL
+logger.addHandler(logging.StreamHandler(sys.stderr))
+logger.handlers[-1].setLevel(logging.ERROR)
+logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Тест
+logger.debug("DEBUG → stdout")
+logger.info("INFO → stdout")
+logger.warning("WARNING → stdout")
+logger.error("ERROR → stderr")
+logger.critical("CRITICAL → stderr")
+
 
 # Инициализация бота и диспетчера
 bot = Bot(token=TOKEN)
