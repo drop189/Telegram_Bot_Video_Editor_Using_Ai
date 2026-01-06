@@ -138,6 +138,7 @@ def load_subscribed_users():
         if os.path.exists(SUBSCRIBED_USERS_FILE):
             with open(SUBSCRIBED_USERS_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                logging.info(f"Загружено из {SUBSCRIBED_USERS_FILE}")
                 return set(data.get('user_ids', []))
     except Exception as e:
         logging.error(f"Ошибка загрузки пользователей: {e}")
@@ -150,6 +151,7 @@ def save_subscribed_users():
         with open(SUBSCRIBED_USERS_FILE, 'w', encoding='utf-8') as f:
             json.dump({'user_ids': list(SUBSCRIBED_USERS)}, f, ensure_ascii=False, indent=2)
             logging.info(f"Список пользователей успешно сохранен. Кол-во - {len(SUBSCRIBED_USERS)}")
+            logging.info(f"Сохранено в {SUBSCRIBED_USERS_FILE}")
     except Exception as e:
         logging.error(f"Ошибка сохранения пользователей: {e}")
 
