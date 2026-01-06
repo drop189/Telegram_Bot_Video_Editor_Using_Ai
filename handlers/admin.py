@@ -1,5 +1,5 @@
 import os
-from aiogram import types
+from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -7,6 +7,7 @@ from config import dp, ADMIN_IDS, VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS
 from states import AdminSendMessage
 from utils.subscribers import save_subscribed_users
 
+router = Router()
 
 # ============ КОМАНДЫ АДМИНА БОТА ============
 

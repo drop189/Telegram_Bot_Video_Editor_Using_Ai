@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+import textwrap
+
 from aiogram import F
 from aiogram.exceptions import TelegramAPIError, TelegramNetworkError
 from aiogram.fsm.context import FSMContext
@@ -16,338 +18,33 @@ from states import VideoProcessing
 # Обработка видео с сохраненной темой
 @dp.message(VideoProcessing.waiting_for_video, F.video)
 async def handle_video_with_theme(message: Message, state: FSMContext):
-    # Получаем сохраненную тему
-    user_data = await state.get_data()
-    theme = user_data.get('theme', AI_STANDARD_THEME)
+    data = await state.get_data()
+    theme = data.get("theme", AI_STANDARD_THEME)
 
-    # Уведомляем пользователя
-    status_message = await message.answer(f"🎬 Видео получено. Тема: '{theme}'\nНачинаю обработку...")
-
-    await state.set_state(VideoProcessing.processing)
-
-
-    input_path = None
-    output_path = None
-
-    try:
-        # Создаем рабочие папки
-        os.makedirs(VIDEOS_FOLDER, exist_ok=True)
-        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-        # Получаем информацию о файле
-        video = message.video
-        file_info = await bot.get_file(video.file_id)
-
-        # Генерируем уникальные имена файлов
-        user_id = message.from_user.id
-        timestamp = int(asyncio.get_event_loop().time())
-        input_filename = f"temp_{user_id}_{timestamp}.mp4"
-        output_filename = f"processed_{user_id}_{timestamp}.mp4"
-
-        input_path = os.path.join(VIDEOS_FOLDER, input_filename)
-        output_path = os.path.join(OUTPUT_FOLDER, output_filename)
-
-        logging.info(f"Скачиваю видео в: {input_path}")
-        logging.info(f"Тема: {theme}")
-
-        # Скачиваем видео
-        await status_message.edit_text("📥 Скачиваю видео...")
-        try:
-            await bot.download_file(file_info.file_path, input_path)
-            if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
-                raise Exception("Файл не скачался или пустой")
-            logging.info(f"Файл скачан. Размер: {os.path.getsize(input_path)} байт")
-        except Exception as e:
-            await status_message.edit_text(f"❌ Ошибка скачивания: {str(e)}")
-            await state.clear()
-            return
-
-        # Обрабатываем видео
-        await status_message.edit_text(f"⚙️ Обрабатываю видео...\n🤔 Генерирую текст на тему: '{theme}'")
-
-        # Используем asyncio.to_thread для блокирующих операций
-        success, result_msg, title, desc, used_theme = await asyncio.to_thread(
-            process_single_video,
-            input_path,
-            output_path,
-            theme
-        )
-
-        if not success:
-            await status_message.edit_text(f"❌ {result_msg}")
-            await state.clear()
-            return
-
-        # Проверяем результат
-        if not os.path.exists(output_path):
-            await status_message.edit_text("❌ Обработанное видео не создано")
-            await state.clear()
-            return
-
-        # Отправляем результат
-        await status_message.edit_text("📤 Отправляю результат...")
-
-        try:
-            # Проверяем длину заголовка для Telegram caption
-            if title and len(title) > 1024:  # Ограничение Telegram для caption
-                caption = f"🎬 {title[:1021]}...\n\n📌 Тема: {used_theme}"
-            else:
-                caption = f"🎬 {title}\n\n📌 Тема: {used_theme}"
-
-            # Отправляем видео с заголовком как подпись
-            video_file = FSInputFile(output_path, filename=output_filename)
-            await message.answer_video(
-                video_file,
-                caption=caption
-            )
-
-            # Отправляем описание отдельным сообщением
-            if desc and desc != "Описание не сгенерировано":
-                # Форматируем описание для лучшей читаемости
-                description_text = f"""
-📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:
-```Копировать
-{desc}
-```
-✨ Текст на видео: "{title}"
-🎯 Тема: {used_theme}
-                """
-
-                # Разбиваем на части если слишком длинное (ограничение Telegram)
-                if len(description_text) > 4096:
-                    parts = [description_text[i:i + 4000] for i in range(0, len(description_text), 4000)]
-                    for part in parts:
-                        await message.answer(part)
-                else:
-                    await message.answer(description_text, parse_mode='Markdown')
-
-            await status_message.delete()
-
-            # Предлагаем обработать еще одно видео
-            await message.answer(
-                "✅ Готово! Видео обработано успешно.\n\n"
-                "Хочешь обработать еще одно видео?\n"
-                "1. Отправь новую тему для текста\n"
-                "2. Или просто отправь следующее видео - будет использована стандартная тема\n\n"
-                "Для отмены используй /cancel"
-            )
-
-            # Возвращаемся в состояние ожидания темы
-            await state.set_state(VideoProcessing.waiting_for_theme)
-
-        except Exception as e:
-            await status_message.edit_text(f"❌ Ошибка отправки: {str(e)}")
-            logging.error(f"Ошибка отправки: {e}")
-            await state.clear()
-
-    except Exception as e:
-        logging.error(f"Ошибка в handle_video: {e}")
-        try:
-            await message.answer(f"❌ Произошла ошибка: {str(e)}")
-        except (TelegramAPIError, TelegramNetworkError) as telegram_error:
-            logging.error(f"Не удалось отправить сообщение об ошибке: {telegram_error}")
-        except Exception as e:
-            logging.error(f"Неожиданная ошибка при отправке сообщения: {e}")
-
-        await state.clear()
-
-    finally:
-        # Очистка временных файлов
-        try:
-            if 'input_path' in locals() and os.path.exists(input_path):
-                os.remove(input_path)
-            if 'output_path' in locals() and os.path.exists(output_path):
-                os.remove(output_path)
-        except Exception as e:
-            logging.error(f"Ошибка при очистке файлов: {e}")
+    await process_video(
+        message,
+        state,
+        theme,
+        f"🎬 Видео получено.\n"
+        f"📌 Тема: '{theme}'\n"
+        f"⏳ Начинаю обработку..."
+    )
 
 
 # Обработка видео БЕЗ предварительного выбора темы (используется стандартная тема)
 @dp.message(F.video)
 async def handle_video_without_theme(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-
-    # Если мы в состоянии waiting_for_video, то пропускаем этот хендлер
-    # (далее сработает handle_video_with_theme)
-    if current_state == VideoProcessing.waiting_for_video:
+    if await state.get_state() == VideoProcessing.waiting_for_video:
         return
 
-    # Используем стандартную тему
-    standard_theme = AI_STANDARD_THEME
-
-    await message.answer(
-        f"🎬 Видео получено. Использую стандартную тему: '{standard_theme}'\n\n"
-        f"⏳ Начинаю обработку...\n\n"
-        f"ℹ️ Если хотите задать свою тему, сначала отправьте текст темы, а затем видео"
+    await process_video(
+        message,
+        state,
+        AI_STANDARD_THEME,
+        f"🎬 Видео получено.\n"
+        f"📌 Использую стандартную тему: '{AI_STANDARD_THEME}'\n"
+        f"⏳ Начинаю обработку..."
     )
-
-    # Устанавливаем состояние обработки
-    await state.set_state(VideoProcessing.processing)
-
-    input_path = None
-    output_path = None
-
-    try:
-        # Создаем рабочие папки
-        os.makedirs(VIDEOS_FOLDER, exist_ok=True)
-        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-        # Получаем информацию о файле
-        video = message.video
-        file_info = await bot.get_file(video.file_id)
-
-        # Генерируем уникальные имена файлов
-        user_id = message.from_user.id
-        timestamp = int(asyncio.get_event_loop().time())
-        input_filename = f"temp_{user_id}_{timestamp}.mp4"
-        output_filename = f"processed_{user_id}_{timestamp}.mp4"
-
-        input_path = os.path.join(VIDEOS_FOLDER, input_filename)
-        output_path = os.path.join(OUTPUT_FOLDER, output_filename)
-
-        logging.info(f"Скачиваю видео в: {input_path}")
-        logging.info(f"Использую стандартную тему: {standard_theme}")
-
-        # Скачиваем видео
-        status_message = await message.answer("📥 Скачиваю видео...")
-        try:
-            await bot.download_file(file_info.file_path, input_path)
-            if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
-                raise Exception("Файл не скачался или пустой")
-            logging.info(f"Файл скачан. Размер: {os.path.getsize(input_path)} байт")
-        except Exception as e:
-            await status_message.edit_text(f"❌ Ошибка скачивания: {str(e)}")
-            await state.clear()
-            return
-
-        # Обрабатываем видео
-        await status_message.edit_text(f"⚙️ Обрабатываю видео...\n🤔 Генерирую текст на стандартную тему...")
-
-        # Используем asyncio.to_thread для блокирующих операций
-        success, result_msg, title, desc, used_theme = await asyncio.to_thread(
-            process_single_video,
-            input_path,
-            output_path,
-            standard_theme
-        )
-
-        if not success:
-            await status_message.edit_text(f"❌ {result_msg}")
-            await state.clear()
-            return
-
-        # Проверяем результат
-        if not os.path.exists(output_path):
-            await status_message.edit_text("❌ Обработанное видео не создано")
-            await state.clear()
-            return
-
-        # Отправляем результат
-        await status_message.edit_text("📤 Отправляю результат...")
-
-        try:
-            # Проверяем длину заголовка для Telegram caption
-            if title and len(title) > 1024:  # Ограничение Telegram для caption
-                caption = f"🎬 {title[:1021]}...\n\n📌 Тема: {used_theme}"
-            else:
-                caption = f"🎬 {title}\n\n📌 Тема: {used_theme}"
-
-            # Отправляем видео с заголовком как подпись
-            video_file = FSInputFile(output_path, filename=output_filename)
-            await message.answer_video(
-                video_file,
-                caption=caption
-            )
-
-            # Отправляем описание отдельным сообщением
-            if desc and desc != "Описание не сгенерировано":
-                # Форматируем описание для лучшей читаемости
-                description_text = f"""
-📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:
-```Копировать
-{desc}
-```
-✨ Текст на видео: "{title}"
-🎯 Тема: {used_theme}
-                """
-
-                # Разбиваем на части если слишком длинное (ограничение Telegram)
-                if len(description_text) > 4096:
-                    parts = [description_text[i:i + 4000] for i in range(0, len(description_text), 4000)]
-                    for part in parts:
-                        await message.answer(part)
-                else:
-                    await message.answer(description_text, parse_mode='Markdown')
-
-            await status_message.delete()
-
-            # Предлагаем обработать еще одно видео
-            await message.answer(
-                "✅ Готово! Видео обработано успешно.\n\n"
-                "Хочешь обработать еще одно видео?\n"
-                "1. Отправь новую тему для текста\n"
-                "2. Или просто отправь следующее видео - будет использована стандартная тема\n\n"
-                "Для отмены используй /cancel"
-            )
-
-            # Возвращаемся в состояние ожидания темы
-            await state.set_state(VideoProcessing.waiting_for_theme)
-
-        except Exception as e:
-            await status_message.edit_text(f"❌ Ошибка отправки: {str(e)}")
-            logging.error(f"Ошибка отправки: {e}")
-            await state.clear()
-
-    except Exception as e:
-        logging.error(f"Ошибка в handle_video: {e}")
-        try:
-            await message.answer(f"❌ Произошла ошибка: {str(e)}")
-        except (TelegramAPIError, TelegramNetworkError) as telegram_error:
-            logging.error(f"Не удалось отправить сообщение об ошибке: {telegram_error}")
-        except Exception as e:
-            logging.error(f"Неожиданная ошибка при отправке сообщения: {e}")
-
-        await state.clear()
-
-    finally:
-        # Очистка временных файлов
-        try:
-            if 'input_path' in locals() and os.path.exists(input_path):
-                os.remove(input_path)
-            if 'output_path' in locals() and os.path.exists(output_path):
-                os.remove(output_path)
-        except Exception as e:
-            logging.error(f"Ошибка при очистке файлов: {e}")
-
-
-# Получение темы от пользователя - ТОЛЬКО для текстовых сообщений
-@dp.message(VideoProcessing.waiting_for_theme, F.text)
-async def process_theme(message: Message, state: FSMContext):
-    # Проверяем, что есть текст
-    if not message.text:
-        await message.answer("❌ Пожалуйста, отправьте текстовое сообщение с темой.")
-        return
-
-    theme = message.text.strip()
-
-    if len(theme) < 2:
-        await message.answer("❌ Тема слишком короткая. Пожалуйста, введите тему подробнее.")
-        return
-
-    if len(theme) > 500:
-        await message.answer("❌ Тема слишком длинная. Пожалуйста, уложитесь в 500 символов.")
-        return
-
-    await state.update_data(theme=theme)
-
-    await message.answer(
-        f"✅ Отлично! Тема сохранена: '{theme}'\n\n"
-        f"Теперь отправь мне видео для обработки! 🎬\n\n"
-        f"📌 Можно отправить видео файлом или как видеосообщение\n"
-        f"⏳ Обработка займет несколько минут"
-    )
-
-    await state.set_state(VideoProcessing.waiting_for_video)
 
 
 # Если в состоянии waiting_for_theme пришло фото
@@ -400,3 +97,132 @@ async def handle_text(message: Message, state: FSMContext):
         # В других случаях (например, в waiting_for_theme), на будущее, если будеи расширяться
         # Этот случай уже обрабатывается хендлером process_theme (waiting_for_theme)
         pass
+
+
+# Получение темы от пользователя - ТОЛЬКО для текстовых сообщений
+@dp.message(VideoProcessing.waiting_for_theme, F.text)
+async def process_theme(message: Message, state: FSMContext):
+    # Проверяем, что есть текст
+    if not message.text:
+        await message.answer("❌ Пожалуйста, отправьте текстовое сообщение с темой.")
+        return
+
+    theme = message.text.strip()
+
+    if len(theme) < 2:
+        await message.answer("❌ Тема слишком короткая. Пожалуйста, введите тему подробнее.")
+        return
+
+    if len(theme) > 500:
+        await message.answer("❌ Тема слишком длинная. Пожалуйста, уложитесь в 500 символов.")
+        return
+
+    await state.update_data(theme=theme)
+
+    await message.answer(
+        f"✅ Отлично! Тема сохранена: '{theme}'\n\n"
+        f"Теперь отправь мне видео для обработки! 🎬\n\n"
+        f"📌 Можно отправить видео файлом или как видеосообщение\n"
+        f"⏳ Обработка займет несколько минут"
+    )
+
+    await state.set_state(VideoProcessing.waiting_for_video)
+
+# Обработка полученного видео общая функция
+async def process_video(
+        message: Message,
+        state: FSMContext,
+        theme: str,
+        intro_text: str
+):
+    input_path = None
+    output_path = None
+
+    status_message = await message.answer(intro_text)
+    await state.set_state(VideoProcessing.processing)
+
+    try:
+        os.makedirs(VIDEOS_FOLDER, exist_ok=True)
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+        video = message.video
+        file_info = await bot.get_file(video.file_id)
+
+        user_id = message.from_user.id
+        timestamp = int(asyncio.get_event_loop().time())
+
+        input_path = os.path.join(
+            VIDEOS_FOLDER, f"temp_{user_id}_{timestamp}.mp4"
+        )
+        output_path = os.path.join(
+            OUTPUT_FOLDER, f"processed_{user_id}_{timestamp}.mp4"
+        )
+
+        await status_message.edit_text("📥 Скачиваю видео...")
+        await bot.download_file(file_info.file_path, input_path)
+
+        if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
+            raise Exception("Файл не скачался или пустой")
+
+        await status_message.edit_text(
+            f"⚙️ Обрабатываю видео...\n"
+            f"🤔 Генерирую текст на тему: '{theme}'"
+        )
+
+        success, result_msg, title, desc, used_theme = await asyncio.to_thread(
+            process_single_video,
+            input_path,
+            output_path,
+            theme
+        )
+
+        if not success:
+            await status_message.edit_text(f"❌ {result_msg}")
+            return
+
+        if not os.path.exists(output_path):
+            raise Exception("Обработанное видео не создано")
+
+        await status_message.edit_text("📤 Отправляю результат...")
+
+        if title and len(title) > 1024:
+            caption = f"🎬 {title[:1021]}...\n\n📌 Тема: {used_theme}"
+        else:
+            caption = f"🎬 {title}\n\n📌 Тема: {used_theme}"
+
+        await message.answer_video(
+            FSInputFile(output_path),
+            caption=caption
+        )
+
+        if desc and desc != "Описание не сгенерировано":
+            description_text = (
+                "📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:\n"
+                "-------------------------\n"
+                f"{desc}\n\n"
+                f"✨ Текст на видео: \"{title}\"\n"
+                f"🎯 Тема: {used_theme}"
+            )
+
+            for part in textwrap.wrap(description_text, 4000):
+                await message.answer(part)
+
+        await status_message.delete()
+
+        await message.answer(
+            "✅ Готово! Видео обработано.\n\n"
+            "Отправь новую тему или следующее видео.\n"
+            "Для отмены — /cancel"
+        )
+
+        await state.set_state(VideoProcessing.waiting_for_theme)
+
+    except Exception as e:
+        logging.exception("Ошибка обработки видео")
+        await message.answer(f"❌ Ошибка: {e}")
+        await state.clear()
+
+    finally:
+        for path in (input_path, output_path):
+            if path and os.path.exists(path):
+                os.remove(path)

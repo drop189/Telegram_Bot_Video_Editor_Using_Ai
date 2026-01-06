@@ -3,6 +3,10 @@ import logging
 import os
 import sys
 
+from handlers.basic import router as basic_router
+from handlers.admin import router as admin_router
+
+
 from config import bot, VIDEOS_FOLDER, OUTPUT_FOLDER, dp, \
     SUBSCRIBED_USERS
 from utils.subscribers import save_subscribed_users, load_subscribed_users, send_bot_stopping_notification, \
@@ -43,6 +47,11 @@ async def graceful_shutdown():
 
 async def main():
     logging.info("Запуск бота...")
+
+    # Регистрация роутеров
+    dp.include_router(basic_router)
+    dp.include_router(admin_router)
+
 
     # Загружаем подписчиков
     SUBSCRIBED_USERS.update(load_subscribed_users())

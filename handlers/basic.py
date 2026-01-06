@@ -1,4 +1,6 @@
 import logging
+
+from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -7,6 +9,7 @@ from services.ai_service import AI_STANDARD_THEME
 from states import VideoProcessing
 from utils.subscribers import save_subscribed_users
 
+router = Router()
 
 # ============ КОМАНДЫ БОТА ============
 
