@@ -739,7 +739,7 @@ async def cmd_send_message_menu(message: Message, state: FSMContext):
     ])
 
     keyboard.append([
-        types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_send")
+        types.InlineKeyboardButton(text="❌ Отмена", callback_data="send_to_cancel")
     ])
 
     reply_markup = types.InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -855,11 +855,11 @@ async def cmd_admin_send(message: Message):
 
 
 # Обработка ответов от кнопок из бота(колбеки)
-@dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"), F.data.startswith("cancel_send"))
+@dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
 async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
-    if data == "cancel_send":
+    if data == "send_to_cancel":
         await callback.message.delete()
         await callback.answer("Отменено")
         await state.clear()
