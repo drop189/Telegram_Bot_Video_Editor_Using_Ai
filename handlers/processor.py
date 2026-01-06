@@ -2,9 +2,7 @@ import asyncio
 import logging
 import os
 import textwrap
-
-from aiogram import F
-from aiogram.exceptions import TelegramAPIError, TelegramNetworkError
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, FSInputFile
 from config import bot, VIDEOS_FOLDER, OUTPUT_FOLDER, dp
@@ -12,6 +10,7 @@ from services.ai_service import AI_STANDARD_THEME
 from services.video_editor import process_single_video
 from states import VideoProcessing
 
+router = Router()
 
 # ============ ХЕНДЛЕРЫ БОТА ============
 

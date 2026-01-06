@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from aiogram import types, F
+from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from config import dp, ADMIN_IDS, SUBSCRIBED_USERS, bot
 from states import AdminSendMessage
 
+router = Router()
 
 # ============ КОЛБЭКИ ============
 
