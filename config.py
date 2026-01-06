@@ -12,7 +12,7 @@ load_dotenv()
 VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "/tmp/videos/output")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
-VOLUME_PATH = os.getenv("VOLUME_PATH", "/data")
+VOLUME_PATH = os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "/data")
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")

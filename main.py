@@ -1395,7 +1395,7 @@ async def main():
     logging.info("Запуск бота...")
 
     # Загружаем подписчиков
-    SUBSCRIBED_USERS = load_subscribed_users()
+    SUBSCRIBED_USERS.update(load_subscribed_users())
     logging.info(f"Загружено {len(SUBSCRIBED_USERS)} подписчиков")
 
     # Создаем необходимые папки
