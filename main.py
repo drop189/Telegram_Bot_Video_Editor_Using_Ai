@@ -860,8 +860,8 @@ async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
     if data == "send_to_cancel":
+        await callback.message.answer("❌ Отменено")
         await callback.message.delete()
-        await callback.answer("Отменено")
         await state.clear()
         return
 
