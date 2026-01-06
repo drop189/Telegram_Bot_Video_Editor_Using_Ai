@@ -34,13 +34,22 @@ ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] i
 SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+get_env_name = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
+if get_env_name == "production":
+    # Конфигурация для production
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True
+    )
+else:
+    # Конфигурация для debug или тестов
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler(sys.stdout)]
+    )
 
 # Инициализация бота и диспетчера
 bot = Bot(token=TOKEN)
