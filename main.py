@@ -31,7 +31,8 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 # Настройка администраторов и пользователей
 admin_ids_str = os.environ.get("ADMIN_IDS", "")
 ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] if admin_ids_str else []  # ID пользователя Telegram
-SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения пользователей
+VOLUME_PATH = "/data"
+SUBSCRIBED_USERS_FILE = os.path.join(VOLUME_PATH, "users.json")  # Файл для сохранения пользователей
 
 # Настройка логирования
 env = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
@@ -51,13 +52,6 @@ logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s 
 logger.addHandler(logging.StreamHandler(sys.stderr))
 logger.handlers[-1].setLevel(logging.ERROR)
 logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# Тест
-logger.debug("DEBUG → stdout")
-logger.info("INFO → stdout")
-logger.warning("WARNING → stdout")
-logger.error("ERROR → stderr")
-logger.critical("CRITICAL → stderr")
 
 
 # Инициализация бота и диспетчера
