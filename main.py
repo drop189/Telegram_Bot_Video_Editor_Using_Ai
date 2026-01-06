@@ -855,7 +855,7 @@ async def cmd_admin_send(message: Message):
 
 
 # Обработка ответов от кнопок из бота(колбеки)
-@dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
+@dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"), F.data.startswith("cancel_send"))
 async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
