@@ -4,10 +4,10 @@ import asyncio
 import subprocess
 import random
 import textwrap
-
 import requests
 import json
 import logging
+from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Message, FSInputFile
@@ -16,6 +16,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
+load_dotenv()
 
 # ============ НАСТРОЙКИ ============
 VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
@@ -34,9 +35,11 @@ SUBSCRIBED_USERS_FILE = "users.json"  # Файл для сохранения п�
 
 # Настройка логирования
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
 # Инициализация бота и диспетчера
@@ -58,15 +61,6 @@ class VideoProcessing(StatesGroup):
     waiting_for_video = State()
     processing = State()
 
-
-# Настройка логирования для Railway
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)  # Важно для Railway
-    ]
-)
 
 def check_system_dependencies():
     """Проверяем системные зависимости"""
