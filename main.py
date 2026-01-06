@@ -1,71 +1,27 @@
-import os
-import sys
 import asyncio
-import subprocess
-import random
-import textwrap
-import requests
 import json
 import logging
-from dotenv import load_dotenv
+import os
+import random
+import subprocess
+import sys
+import textwrap
+import requests
 from PIL import Image, ImageDraw, ImageFont
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import Message, FSInputFile
+from aiogram import types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import Message, FSInputFile
+from config import SUBSCRIBED_USERS_FILE, ADMIN_IDS, bot, FFMPEG_PATH, OPENROUTER_API_KEY, OPENROUTER_MODEL, \
+    VIDEOS_FOLDER, OUTPUT_FOLDER, dp, SUBSCRIBED_USERS
 
-load_dotenv()
-
-# ============ НАСТРОЙКИ ============
-VIDEOS_FOLDER = os.getenv("VIDEOS_FOLDER", "/tmp/videos/input")
-OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "/tmp/videos/output")
-FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
-
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-
-# Настройка администраторов и пользователей
-admin_ids_str = os.environ.get("ADMIN_IDS", "")
-ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] if admin_ids_str else []  # ID пользователя Telegram
-VOLUME_PATH = "/data"
-SUBSCRIBED_USERS_FILE = os.path.join(VOLUME_PATH, "users.json")  # Файл для сохранения пользователей
-
-# Настройка логирования
-env = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
-level = logging.INFO if env == "production" else logging.DEBUG
-
-logger = logging.getLogger()
-logger.setLevel(level)
-logger.handlers.clear()
-
-# stdout: DEBUG/INFO/WARNING
-logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.handlers[-1].setLevel(level)
-logger.handlers[-1].addFilter(lambda r: r.levelno < logging.ERROR)
-logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# stderr: ERROR/CRITICAL
-logger.addHandler(logging.StreamHandler(sys.stderr))
-logger.handlers[-1].setLevel(logging.ERROR)
-logger.handlers[-1].setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-
-# Инициализация бота и диспетчера
-bot = Bot(token=TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(storage=storage)
-
-# Глобальная переменная для хранения подписчиков
-SUBSCRIBED_USERS = set()
 
 # ============ ADMIN СОСТОЯНИЯ ============
 class AdminSendMessage(StatesGroup):
     waiting_for_user_choice = State()
     waiting_for_message_text = State()
+
 
 # ============ FSM СОСТОЯНИЯ ============
 class VideoProcessing(StatesGroup):
@@ -130,6 +86,7 @@ def check_system_dependencies():
     logging.info("=== ПРОВЕРКА ЗАВЕРШЕНА ===")
     return True
 
+
 # ============ ФУНКЦИИ ДЛЯ ПОДПИСЧИКОВ ============
 # Подгрузка пользователей бота
 def load_subscribed_users():
@@ -144,6 +101,7 @@ def load_subscribed_users():
         logging.error(f"Ошибка загрузки пользователей: {e}")
     return set()
 
+
 # Сохранение ID пользователей
 def save_subscribed_users():
     """Сохраняем список пользователей в файл"""
@@ -154,6 +112,7 @@ def save_subscribed_users():
             logging.info(f"Сохранено в {SUBSCRIBED_USERS_FILE}")
     except Exception as e:
         logging.error(f"Ошибка сохранения пользователей: {e}")
+
 
 # Отправка сообщения всем пользователям
 async def broadcast_message(text: str, only_admins: bool = False):
@@ -173,6 +132,7 @@ async def broadcast_message(text: str, only_admins: bool = False):
 
     return sent_count, failed_count
 
+
 # Уведомление о запуске работы
 async def send_bot_started_notification():
     """Отправляем уведомление о запуске бота"""
@@ -182,6 +142,7 @@ async def send_bot_started_notification():
         logging.info(f"Уведомление о запуске отправлено: {sent} успешно, {failed} неудачно")
     except Exception as e:
         logging.error(f"Ошибка отправки уведомления о запуске: {e}")
+
 
 # Уведомление об остановке работы
 async def send_bot_stopping_notification():
@@ -269,11 +230,11 @@ def add_text_with_ffmpeg(input_file, output_file, text):
             os.remove(text_file_name)
 
 
-def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white", text_color="black"):
+def create_rounded_text_image(text, output_path, video_width, video_height, font_path=None, bg_color="white",
+                              text_color="black"):
     """
     Создает PNG с прозрачным фоном, текстом и закругленной подложкой.
     """
-
 
     # Максимальная ширина текста (90% от ширины видео)
     max_width = int(video_width * 0.9)
@@ -302,7 +263,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
     # Получаем ширину символа примерно, чтобы посчитать кол-во символов в строке
     avg_char_width = draw.textlength("x", font=font)
-    if avg_char_width == 0: avg_char_width = 1 # Защита от деления на ноль
+    if avg_char_width == 0: avg_char_width = 1  # Защита от деления на ноль
     chars_per_line = int(max_width / avg_char_width)
 
     # Разбиваем текст на строки, которые влезают в max_width
@@ -315,7 +276,6 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         bbox = draw.textbbox((0, 0), line, font=font)
         l_width = bbox[2] - bbox[0]
         l_height = bbox[3] - bbox[1]
-
 
         box_width = l_width + (padding_x * 2)
         box_height = l_height + (padding_y * 2)
@@ -342,7 +302,6 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
     radius = int(font_size / 2)
     current_y = 0
-
 
     # Для начала нарисуем все прямоугольники и сразу сохраним их координаты
     rectangles_cords = []
@@ -387,8 +346,8 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
 
     # Проходим по парам прямоугольников и соединяем их уголки (не понимаю, работает ли)
     for i in range(len(rectangles_cords) - 1):
-        r1 = rectangles_cords[i] # Верхний прямоугольник
-        r2 = rectangles_cords[i + 1] # Нижний прямоугольник
+        r1 = rectangles_cords[i]  # Верхний прямоугольник
+        r2 = rectangles_cords[i + 1]  # Нижний прямоугольник
 
         # Координаты нижних углов верхнего прямоугольника
         r1_x1, r1_y1, r1_x2, r1_y2 = r1
@@ -398,7 +357,7 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
         # Соединяем (r1_x1, r1_y2) с (r2_x1, r2_y1)
 
         pxw = 50
-        if r1_x1 == r2_x1: # Если выравнивание по левому краю совпадает
+        if r1_x1 == r2_x1:  # Если выравнивание по левому краю совпадает
             # Рисуем линию шириной pxw px от низа верхнего до верха нижнего
             draw.rectangle([(r1_x1, r1_y2), (r1_x1 + pxw, r2_y1)], fill=bg_color)
 
@@ -411,7 +370,9 @@ def create_rounded_text_image(text, output_path, video_width, video_height, font
     image.save(output_path)
     return output_path
 
-def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"):
+
+def add_text_with_rounded_box(input_video, output_video, text,
+                              font_path="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"):
     logging.info("Генерирую подложку с закруглением...")
 
     # Имя временной картинки
@@ -467,6 +428,7 @@ def add_text_with_rounded_box(input_video, output_video, text, font_path="/usr/s
         if os.path.exists(overlay_path):
             os.remove(overlay_path)
 
+
 def get_video_dimensions(video_path):
     """
     Возвращает размеры (width, height) видео.
@@ -488,6 +450,7 @@ def get_video_dimensions(video_path):
         logging.error(f"Не удалось получить размер видео: {e}")
         # Возвращаем значения по умолчанию (FullHD), если не получилось
         return 1920, 1080
+
 
 def process_video(input_path, output_path, text):
     """Обрабатываем одно видео"""
@@ -738,6 +701,7 @@ async def cmd_stats(message: Message):
 
     await message.answer(stats_text)
 
+
 # Команда /msg - отправка сообщений с удобным меню
 @dp.message(Command("msg"))
 async def cmd_send_message_menu(message: Message, state: FSMContext):
@@ -787,6 +751,7 @@ async def cmd_send_message_menu(message: Message, state: FSMContext):
     )
     await state.set_state(AdminSendMessage.waiting_for_user_choice)
 
+
 # Команда /send - отправка сообщения
 @dp.message(Command("send"))
 async def cmd_quick_message(message: Message):
@@ -817,6 +782,7 @@ async def cmd_quick_message(message: Message):
         await message.answer("❌ ID должен быть числом")
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
+
 
 # Команда /adduser - добавление пользователя
 @dp.message(Command("adduser"))
@@ -852,6 +818,7 @@ async def cmd_add_user(message: Message):
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
 
+
 # Команда /admin_send - отправка сообщения, более универсальная команда, уведомления пользователя
 @dp.message(Command("admin_send"))
 async def cmd_admin_send(message: Message):
@@ -886,6 +853,7 @@ async def cmd_admin_send(message: Message):
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
 
+
 # Обработка ответов от кнопок из бота(колбеки)
 @dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
 async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
@@ -917,6 +885,7 @@ async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     )
     await state.set_state(AdminSendMessage.waiting_for_message_text)
     await callback.answer()
+
 
 # Реализация выбора кнопок(ответы на колбеки)
 @dp.message(AdminSendMessage.waiting_for_message_text, F.text)
@@ -960,6 +929,7 @@ async def process_message_text(message: Message, state: FSMContext):
 
     # Логируем
     logging.info(f"Админ {message.from_user.id} отправил сообщение {target_name}: {text_message[:50]}...")
+
 
 # Помощь для /admin_send
 async def send_message_as_admin(target_user_id: int, message_text: str, from_admin_id: int) -> tuple[bool, str]:
@@ -1384,6 +1354,7 @@ async def handle_text(message: Message, state: FSMContext):
         # Этот случай уже обрабатывается хендлером process_theme (waiting_for_theme)
         pass
 
+
 # ============ GRACEFUL SHUTDOWN ============
 
 async def graceful_shutdown():
@@ -1421,8 +1392,6 @@ async def graceful_shutdown():
 # ============ ЗАПУСК БОТА ============
 
 async def main():
-    global SUBSCRIBED_USERS
-
     logging.info("Запуск бота...")
 
     # Загружаем подписчиков
@@ -1458,7 +1427,7 @@ if __name__ == "__main__":
             logging.error("Критические зависимости отсутствуют. Завершение работы.")
             sys.exit(1)
 
-    # Запускаем бота
+        # Запускаем бота
         logging.info("Все зависимости доступны. Запускаю бота...")
     except KeyboardInterrupt:
         print("\nБот выключен пользователем")
