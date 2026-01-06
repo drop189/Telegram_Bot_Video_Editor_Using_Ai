@@ -4,6 +4,7 @@ import random
 import requests
 from config import OPENROUTER_API_KEY, OPENROUTER_MODEL
 
+AI_STANDARD_THEME = "Философия барберинга, мужской стиль и уход за собой"
 
 def generate_title_and_description(theme: str):
     """Генерация заголовка и описания через OpenRouter"""

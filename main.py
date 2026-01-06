@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import subprocess
 import sys
 
 from aiogram import types, F
@@ -14,63 +13,8 @@ from config import SUBSCRIBED_USERS_FILE, ADMIN_IDS, bot, VIDEOS_FOLDER, OUTPUT_
     SUBSCRIBED_USERS
 from services.video_editor import process_single_video
 from states import VideoProcessing, AdminSendMessage
-
-
-def check_system_dependencies():
-    """Проверяем системные зависимости"""
-    logging.info("=== ПРОВЕРКА СИСТЕМНЫХ ЗАВИСИМОСТЕЙ ===")
-
-    # Проверяем FFmpeg
-    try:
-        result = subprocess.run(
-            ["ffmpeg", "-version"],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode == 0:
-            logging.info("✅ FFmpeg найден")
-            # Получаем версию из вывода
-            version_line = result.stdout.split('\n')[0]
-            logging.info(f"   Версия: {version_line}")
-        else:
-            logging.error("❌ FFmpeg не работает корректно")
-            return False
-    except FileNotFoundError:
-        logging.error("❌ FFmpeg не найден в PATH")
-
-        # Пробуем найти альтернативные пути
-        possible_paths = [
-            "/usr/bin/ffmpeg",
-            "/usr/local/bin/ffmpeg",
-            "/bin/ffmpeg",
-            "ffmpeg"
-        ]
-
-        for path in possible_paths:
-            try:
-                subprocess.run([path, "-version"],
-                               capture_output=True,
-                               text=True)
-                logging.info(f"✅ FFmpeg найден по пути: {path}")
-                return True
-            except:
-                continue
-
-        return False
-
-    # Проверяем другие команды
-    commands_to_check = ["which", "ls", "mkdir", "rm"]
-    for cmd in commands_to_check:
-        try:
-            subprocess.run([cmd, "--version"],
-                           capture_output=True,
-                           text=True)
-            logging.debug(f"✅ {cmd} доступен")
-        except:
-            logging.warning(f"⚠️  {cmd} не найден")
-
-    logging.info("=== ПРОВЕРКА ЗАВЕРШЕНА ===")
-    return True
+from services.ai_service import AI_STANDARD_THEME
+from utils.system import check_system_dependencies
 
 
 # ============ ФУНКЦИИ ДЛЯ ПОДПИСЧИКОВ ============
@@ -172,9 +116,9 @@ async def cmd_start(message: Message, state: FSMContext):
 # Команда /default - использовать стандартную тему
 @dp.message(Command("default"))
 async def cmd_default(message: Message, state: FSMContext):
-    await state.update_data(theme="Философия барберинга, мужской стиль и уход за собой")
+    await state.update_data(theme=AI_STANDARD_THEME)
     await message.answer(
-        "✅ Использую стандартную тему: 'Философия барберинга, мужской стиль и уход за собой'\n\n"
+        f"✅ Использую стандартную тему: '{AI_STANDARD_THEME}'\n\n"
         "Теперь отправь мне видео для обработки! 🎬"
     )
     await state.set_state(VideoProcessing.waiting_for_video)
@@ -548,7 +492,7 @@ async def process_theme(message: Message, state: FSMContext):
 async def handle_video_with_theme(message: Message, state: FSMContext):
     # Получаем сохраненную тему
     user_data = await state.get_data()
-    theme = user_data.get('theme', "Философия барберинга, мужской стиль и уход за собой")
+    theme = user_data.get('theme', AI_STANDARD_THEME)
 
     # Уведомляем пользователя
     status_message = await message.answer(f"🎬 Видео получено. Тема: '{theme}'\nНачинаю обработку...")
@@ -696,7 +640,7 @@ async def handle_video_without_theme(message: Message, state: FSMContext):
         return
 
     # Используем стандартную тему
-    standard_theme = "Философия барберинга, мужской стиль и уход за собой"
+    standard_theme = AI_STANDARD_THEME
 
     await message.answer(
         f"🎬 Видео получено. Использую стандартную тему: '{standard_theme}'\n\n"

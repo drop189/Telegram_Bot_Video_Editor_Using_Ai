@@ -4,7 +4,7 @@ import subprocess
 import textwrap
 from PIL import Image, ImageDraw, ImageFont
 from config import FFMPEG_PATH, FONT_PATH
-from services.ai_service import generate_title_and_description
+from services.ai_service import generate_title_and_description, AI_STANDARD_THEME
 
 
 # ============ ФУНКЦИИ ОБРАБОТКИ ВИДЕО ============
@@ -351,7 +351,7 @@ def process_single_video(input_path, output_path, theme=None):
 
         # Если тема не указана, используем стандартную
         if not theme:
-            theme = "Философия барберинга, мужской стиль и уход за собой"
+            theme = AI_STANDARD_THEME
 
         # Генерируем текст
         text, desc = generate_title_and_description(theme)
