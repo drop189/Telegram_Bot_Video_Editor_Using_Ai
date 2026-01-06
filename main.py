@@ -818,6 +818,40 @@ async def cmd_quick_message(message: Message):
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
 
+# Команда /adduser - добавление пользователя
+@dp.message(Command("adduser"))
+async def cmd_add_user(message: Message):
+    """Добавить пользователя в users.json"""
+    user_id = message.from_user.id
+
+    if user_id not in ADMIN_IDS:
+        return
+
+    # Формат: /adduser ID
+    args = message.text.split(maxsplit=1)
+
+    if len(args) < 2:
+        await message.answer(
+            "Использование: /adduser <ID>\n"
+            "Пример: /adduser 777111000"
+        )
+        return
+
+    try:
+        target_id = int(args[1])
+
+        if target_id not in SUBSCRIBED_USERS:
+            SUBSCRIBED_USERS.add(target_id)
+            save_subscribed_users()
+            await message.answer(f"✅ Пользователь {target_id} добавлен")
+        else:
+            await message.answer(f"ℹ️ Пользователь {target_id} уже есть в списке")
+
+    except ValueError:
+        await message.answer("❌ ID должен быть числом")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
 # Команда /admin_send - отправка сообщения, более универсальная команда, уведомления пользователя
 @dp.message(Command("admin_send"))
 async def cmd_admin_send(message: Message):
