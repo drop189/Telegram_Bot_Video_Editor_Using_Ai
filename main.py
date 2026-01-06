@@ -11,23 +11,10 @@ from PIL import Image, ImageDraw, ImageFont
 from aiogram import types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, FSInputFile
 from config import SUBSCRIBED_USERS_FILE, ADMIN_IDS, bot, FFMPEG_PATH, OPENROUTER_API_KEY, OPENROUTER_MODEL, \
     VIDEOS_FOLDER, OUTPUT_FOLDER, dp, SUBSCRIBED_USERS
-
-
-# ============ ADMIN СОСТОЯНИЯ ============
-class AdminSendMessage(StatesGroup):
-    waiting_for_user_choice = State()
-    waiting_for_message_text = State()
-
-
-# ============ FSM СОСТОЯНИЯ ============
-class VideoProcessing(StatesGroup):
-    waiting_for_theme = State()
-    waiting_for_video = State()
-    processing = State()
+from states import VideoProcessing, AdminSendMessage
 
 
 def check_system_dependencies():
