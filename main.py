@@ -9,6 +9,7 @@ from handlers.admin import router as admin_router
 from handlers.basic import router as basic_router
 from handlers.callbacks import router as callbacks_router
 from handlers.processor import router as processor_router
+from services.stats_service import usage_stats
 from services.subscribers import load_subscribed_users, send_bot_started_notification
 from settings.config import VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS
 from settings.logging import setup_logging
@@ -33,6 +34,7 @@ async def main():
     # Загружаем подписчиков
     SUBSCRIBED_USERS.update(load_subscribed_users())
     logging.info(f"Загружено {len(SUBSCRIBED_USERS)} подписчиков")
+    usage_stats.record_session_start()
 
     # Создаем необходимые папки
     os.makedirs(VIDEOS_FOLDER, exist_ok=True)

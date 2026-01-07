@@ -3,11 +3,16 @@ import logging
 
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.dispatcher import bot
 from bot.states import AdminSendMessage
-from settings.config import ADMIN_IDS, SUBSCRIBED_USERS
+from handlers.admin import cmd_admin_menu, cmd_stats, cmd_send_message_menu, cmd_detailed_stats, cmd_stat, \
+    cmd_admin_help, cmd_admin_settings, cmd_clear_temp_files
+from services.stats_service import usage_stats
+from settings.config import ADMIN_IDS, SUBSCRIBED_USERS, VIDEOS_FOLDER, OUTPUT_FOLDER
+from settings.logging import self_logger
 
 router = Router()
 
@@ -16,6 +21,7 @@ router = Router()
 
 # Обработка ответов от кнопок из бота
 @router.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
+@self_logger
 async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
@@ -49,6 +55,7 @@ async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
 
 # Реализация выбора кнопок
 @router.message(AdminSendMessage.waiting_for_message_text, F.text)
+@self_logger
 async def process_message_text(message: Message, state: FSMContext):
     data = await state.get_data()
     target = data.get('target')
@@ -89,3 +96,80 @@ async def process_message_text(message: Message, state: FSMContext):
 
     # Логируем
     logging.info(f"Админ {message.from_user.id} отправил сообщение {target_name}: {text_message[:50]}...")
+
+
+@router.callback_query(F.data.startswith("admin_"))
+@self_logger
+async def handle_admin_callback(callback: CallbackQuery, state: FSMContext):
+    """Обработчик всех админ-колбэков"""
+    user_id = callback.from_user.id
+
+    if user_id not in ADMIN_IDS:
+        await callback.answer("❌ Нет прав!", show_alert=True)
+        return
+
+    action = callback.data.replace("admin_", "")
+
+    # Удаляем меню
+    await callback.message.delete()
+
+    if action == "stat":
+        # Вызываем функцию базовой статистики
+        await cmd_stat(callback.message)
+
+    elif action == "stats":
+        # Вызываем функцию расширенной статистики
+        await cmd_stats(callback.message)
+
+    elif action == "detailed_stats":
+        # Вызываем функцию детальной статистики
+        await cmd_detailed_stats(callback.message)
+
+    elif action == "send_msg":
+        # Вызываем меню отправки сообщений
+        await cmd_send_message_menu(callback.message, state)
+
+    elif action == "add_user":
+        # Показываем инструкцию по добавлению пользователя
+        await callback.message.answer(
+            "👤 *Добавление пользователя*\n\n"
+            "Используйте команду:\n"
+            "`/adduser <ID_пользователя>`\n\n"
+            "*Пример:* `/adduser 123456789`\n\n"
+            "Или введите ID пользователя:",
+            parse_mode='Markdown'
+        )
+
+    elif action == "quick_send":
+        # Показываем инструкцию по быстрой отправке
+        await callback.message.answer(
+            "📨 *Быстрая отправка сообщения*\n\n"
+            "Используйте команду:\n"
+            "`/send <ID_пользователя> <текст>`\n\n"
+            "*Пример:* `/send 123456789 Привет!`",
+            parse_mode='Markdown'
+        )
+
+    elif action == "refresh_stats":
+        # Инвалидируем кэш статистики
+        if hasattr(usage_stats, '_cache'):
+            usage_stats._cache = None
+        await callback.message.answer("✅ Кэш статистики очищен!")
+        # Показываем обновленную статистику
+        await cmd_stats(callback.message)
+
+    elif action == "clear_cache":
+        # Очистка временных файлов
+        await cmd_clear_temp_files(callback.message)
+
+    elif action == "settings":
+        await cmd_admin_settings(callback.message)
+
+    elif action == "help":
+        await cmd_admin_help(callback.message)
+
+    elif action == "back":
+        # Возврат в главное меню
+        await cmd_admin_menu(callback.message)
+
+    await callback.answer()

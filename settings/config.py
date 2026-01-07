@@ -18,6 +18,7 @@ OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 ENVIRONMENT = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
+STATS_FILE = os.path.join(VOLUME_PATH, "usage_stats.json")
 
 # Настройка администраторов и пользователей
 admin_ids_str = os.environ.get("ADMIN_IDS", "")

@@ -9,6 +9,7 @@ from bot.states import VideoProcessing
 from services.ai_service import AI_STANDARD_THEME
 from services.subscribers import save_subscribed_users
 from settings.config import SUBSCRIBED_USERS
+from settings.logging import self_logger
 
 router = Router()
 
@@ -17,6 +18,7 @@ router = Router()
 
 # Команда /start
 @router.message(Command("start"))
+@self_logger
 async def cmd_start(message: Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.first_name
@@ -42,6 +44,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
 # Команда /default - использовать стандартную тему
 @router.message(Command("default"))
+@self_logger
 async def cmd_default(message: Message, state: FSMContext):
     await state.update_data(theme=AI_STANDARD_THEME)
     await message.answer(
@@ -53,6 +56,7 @@ async def cmd_default(message: Message, state: FSMContext):
 
 # Команда /cancel - отмена
 @router.message(Command("cancel"))
+@self_logger
 async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Операция отменена. Используйте /start чтобы начать заново.")

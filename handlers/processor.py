@@ -9,8 +9,10 @@ from aiogram.types import Message, FSInputFile
 from bot.dispatcher import bot
 from bot.states import VideoProcessing
 from services.ai_service import AI_STANDARD_THEME
+from services.stats_service import usage_stats
 from services.video_editor import process_single_video
 from settings.config import VIDEOS_FOLDER, OUTPUT_FOLDER
+from settings.logging import self_logger
 
 router = Router()
 
@@ -19,6 +21,7 @@ router = Router()
 
 # Обработка видео с сохраненной темой
 @router.message(VideoProcessing.waiting_for_video, F.video)
+@self_logger
 async def handle_video_with_theme(message: Message, state: FSMContext):
     data = await state.get_data()
     theme = data.get("theme", AI_STANDARD_THEME)
@@ -35,6 +38,7 @@ async def handle_video_with_theme(message: Message, state: FSMContext):
 
 # Обработка видео БЕЗ предварительного выбора темы (используется стандартная тема)
 @router.message(F.video)
+@self_logger
 async def handle_video_without_theme(message: Message, state: FSMContext):
     if await state.get_state() == VideoProcessing.waiting_for_video:
         return
@@ -51,6 +55,7 @@ async def handle_video_without_theme(message: Message, state: FSMContext):
 
 # Если в состоянии waiting_for_theme пришло фото
 @router.message(VideoProcessing.waiting_for_theme, F.photo)
+@self_logger
 async def handle_photo_in_theme_state(message: Message):
     await message.answer(
         "📌 Вы отправили фото, но я ожидаю тему для текста.\n\n"
@@ -61,6 +66,7 @@ async def handle_photo_in_theme_state(message: Message):
 
 # Если в состоянии waiting_for_theme пришел документ
 @router.message(VideoProcessing.waiting_for_theme, F.document)
+@self_logger
 async def handle_document_in_theme_state(message: Message):
     await message.answer(
         "📌 Вы отправили документ, но я ожидаю тему для текста.\n\n"
@@ -71,12 +77,14 @@ async def handle_document_in_theme_state(message: Message):
 
 # Обработка текстовых сообщений в неправильном состоянии
 @router.message(VideoProcessing.processing)
+@self_logger
 async def handle_text_while_processing(message: Message):
     await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
 
 
 # Получение темы от пользователя - ТОЛЬКО для текстовых сообщений
 @router.message(VideoProcessing.waiting_for_theme, F.text)
+@self_logger
 async def process_theme(message: Message, state: FSMContext):
     # Проверяем, что есть текст
     if not message.text:
@@ -107,6 +115,7 @@ async def process_theme(message: Message, state: FSMContext):
 
 # Обработка обычных текстовых сообщений (без состояния или в других состояниях)
 @router.message(F.text)
+@self_logger
 async def handle_text(message: Message, state: FSMContext):
     current_state = await state.get_state()
 
@@ -146,6 +155,8 @@ async def process_video(
     await state.set_state(VideoProcessing.processing)
 
     try:
+        start_time = asyncio.get_event_loop().time()
+
         os.makedirs(VIDEOS_FOLDER, exist_ok=True)
         os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
@@ -229,6 +240,14 @@ async def process_video(
             "Для отмены используй /cancel"
         )
 
+        processing_time = asyncio.get_event_loop().time() - start_time
+
+        usage_stats.record_video_processed(
+            user_id=message.from_user.id,
+            processing_time=processing_time,
+            theme=theme,
+            content_length=len(desc) if desc else 0
+        )
         await state.set_state(VideoProcessing.waiting_for_theme)
 
     except Exception as e:
