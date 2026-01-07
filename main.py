@@ -4,6 +4,7 @@ import os
 import sys
 
 from bot.dispatcher import dp, bot
+from bot.middlewares import StateLoggingMiddleware
 from handlers.admin import router as admin_router
 from handlers.basic import router as basic_router
 from handlers.callbacks import router as callbacks_router
@@ -25,6 +26,9 @@ async def main():
     dp.include_router(admin_router)
     dp.include_router(callbacks_router)
     dp.include_router(processor_router)
+
+    # Регистрация  Middleware
+    dp.update.middleware(StateLoggingMiddleware())
 
     # Загружаем подписчиков
     SUBSCRIBED_USERS.update(load_subscribed_users())
