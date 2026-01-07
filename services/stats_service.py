@@ -6,12 +6,14 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, List
 
+import pytz
 from matplotlib import pyplot as plt
 
 from settings.config import STATS_FILE
 
 # Константы
 STATS_HISTORY_DAYS = 30
+moscow_tz = pytz.timezone('Europe/Moscow')
 
 
 class UsageStats:
@@ -45,7 +47,7 @@ class UsageStats:
             'content_lengths': [],  # длины сгенерированных текстов
             'processing_times': [],  # время обработки видео
             'themes_used': defaultdict(int),  # тема: количество использований
-            'start_time': datetime.now().isoformat(),
+            'start_time': datetime.now(moscow_tz).isoformat(),
             'uptime_days': 0,
             'sessions': 0
         }
@@ -72,19 +74,19 @@ class UsageStats:
     def update_uptime(self):
         """Обновляет время работы"""
         start_time = datetime.fromisoformat(self.stats['start_time'])
-        self.stats['uptime_days'] = (datetime.now() - start_time).days
+        self.stats['uptime_days'] = (datetime.now(moscow_tz) - start_time).days
 
     def record_video_processed(self, user_id: int, processing_time: float,
                                theme: str = None, content_length: int = None):
         """Записывает успешную обработку видео"""
-        today = datetime.now().strftime('%Y-%m-%d')
-        hour = datetime.now().strftime('%H')
+        today = datetime.now(moscow_tz).strftime('%Y-%m-%d')
+        hour = datetime.now(moscow_tz).strftime('%H')
 
         self.stats['videos_processed'] += 1
         self.stats['daily_usage'][today] += 1
         self.stats['user_activity'][str(user_id)] += 1
         self.stats['peak_hours'][hour] += 1
-        self.stats['last_activity'] = datetime.now().isoformat()
+        self.stats['last_activity'] = datetime.now(moscow_tz).isoformat()
 
         # Обновляем список последних пользователей
         if str(user_id) not in self.stats['last_users']:
@@ -109,7 +111,7 @@ class UsageStats:
 
     def record_error(self, user_id: int, error_type: str = None):
         """Записывает ошибку"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = datetime.now(moscow_tz).strftime('%Y-%m-%d')
 
         self.stats['total_errors'] += 1
         self.stats['videos_failed'] += 1
@@ -136,7 +138,7 @@ class UsageStats:
         }
 
         for i in range(days):
-            date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            date = (datetime.now(moscow_tz) - timedelta(days=i)).strftime('%Y-%m-%d')
             result['dates'].insert(0, date)
             result['usage'].insert(0, self.stats['daily_usage'].get(date, 0))
             result['errors'].insert(0, self.stats['daily_errors'].get(date, 0))

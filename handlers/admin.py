@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime
 
+import pytz
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -85,7 +86,8 @@ async def cmd_stats(message: Message):
         usage_stats.update_uptime()
 
         # Получаем данные
-        today = datetime.datetime.today().strftime('%Y-%m-%d')
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        today = datetime.now(moscow_tz).strftime('%Y-%m-%d')
         daily_count = usage_stats.stats['daily_usage'].get(today, 0)
         daily_errors = usage_stats.stats['daily_errors'].get(today, 0)
 
@@ -352,13 +354,16 @@ async def cmd_admin_menu(message: Message):
     admin_count = len(ADMIN_IDS)
     user_count = len(SUBSCRIBED_USERS)
 
+    moscow_tz = pytz.timezone('Europe/Moscow')
+    current_time = datetime.now(moscow_tz).strftime('%H:%M:%S')
+
     welcome_text = (
         f"👑 *Админ-панель*\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
         f"👤 *Ваш ID:* `{user_id}`\n"
         f"👥 *Пользователей:* {user_count}\n"
         f"👑 *Админов:* {admin_count}\n"
-        f"🕐 *Время:* {datetime.now().strftime('%H:%M:%S')}\n\n"
+        f"🕐 *Время:* {current_time}\n\n"
         f"*Выберите действие:*"
     )
 
