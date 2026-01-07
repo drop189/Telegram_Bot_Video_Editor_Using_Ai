@@ -80,7 +80,7 @@ class UsageStats:
                                theme: str = None, content_length: int = None):
         """Записывает успешную обработку видео"""
         today = datetime.now(moscow_tz).strftime('%Y-%m-%d')
-        hour = datetime.now(moscow_tz).strftime('%H')
+        hour = datetime.now().strftime('%H')
 
         self.stats['videos_processed'] += 1
         self.stats['daily_usage'][today] += 1
