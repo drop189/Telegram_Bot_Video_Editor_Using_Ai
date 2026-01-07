@@ -3,8 +3,8 @@ import json
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
 
 import pytz
 from matplotlib import pyplot as plt
@@ -259,6 +259,45 @@ class UsageStats:
         except Exception as e:
             logging.error(f"Ошибка в update_uptime: {e}")
             self.stats['uptime_days'] = 0
+
+    def get_daily_stats(self, days: int = 7) -> Dict:
+        """Получает статистику за последние N дней"""
+        result = {
+            'dates': [],
+            'usage': [],
+            'errors': []
+        }
+
+        for i in range(days):
+            date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            result['dates'].insert(0, date)
+            result['usage'].insert(0, self.stats['daily_usage'].get(date, 0))
+            result['errors'].insert(0, self.stats['daily_errors'].get(date, 0))
+
+        return result
+
+    def get_top_users(self, limit: int = 5) -> List[tuple]:
+        """Получает топ пользователей по активности"""
+        users = [(uid, count) for uid, count in self.stats['user_activity'].items()]
+        return sorted(users, key=lambda x: x[1], reverse=True)[:limit]
+
+    def get_top_themes(self, limit: int = 5) -> List[tuple]:
+        """Получает самые популярные темы"""
+        themes = [(theme, count) for theme, count in self.stats['themes_used'].items()]
+        return sorted(themes, key=lambda x: x[1], reverse=True)[:limit]
+
+    def get_average_processing_time(self) -> float:
+        """Среднее время обработки"""
+        if not self.stats['processing_times']:
+            return 0
+        return sum(self.stats['processing_times']) / len(self.stats['processing_times'])
+
+    def get_success_rate(self) -> float:
+        """Процент успешных обработок"""
+        total = self.stats['videos_processed'] + self.stats['videos_failed']
+        if total == 0:
+            return 100.0
+        return (self.stats['videos_processed'] / total) * 100
 
 
 # Глобальный экземпляр
