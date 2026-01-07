@@ -75,33 +75,6 @@ async def handle_text_while_processing(message: Message):
     await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
 
 
-# Обработка обычных текстовых сообщений (без состояния или в других состояниях)
-@router.message(F.text)
-async def handle_text(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-
-    if current_state is None:
-        # Если нет активного состояния, предлагаем начать
-        await message.answer("Начните с команды /start")
-        await state.set_state(VideoProcessing.waiting_for_theme)
-    elif current_state == VideoProcessing.waiting_for_video:
-        # Если ожидаем видео, но получили текст
-        await message.answer(
-            "📌 Я ожидаю видео для обработки.\n\n"
-            "Пожалуйста, отправьте видео файлом.\n"
-            "Если хотите изменить тему, отправьте команду /start\n"
-            "Или используйте /default для стандартной темы"
-        )
-        await state.set_state(VideoProcessing.waiting_for_theme)
-    elif current_state == VideoProcessing.processing:
-        # Уже обрабатывается в отдельном хендлере, но на всякий случай
-        await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
-    else:
-        # В других случаях (например, в waiting_for_theme), на будущее, если будеи расширяться
-        # Этот случай уже обрабатывается хендлером process_theme (waiting_for_theme)
-        pass
-
-
 # Получение темы от пользователя - ТОЛЬКО для текстовых сообщений
 @router.message(VideoProcessing.waiting_for_theme, F.text)
 async def process_theme(message: Message, state: FSMContext):
@@ -130,6 +103,33 @@ async def process_theme(message: Message, state: FSMContext):
     )
 
     await state.set_state(VideoProcessing.waiting_for_video)
+
+
+# Обработка обычных текстовых сообщений (без состояния или в других состояниях)
+@router.message(F.text)
+async def handle_text(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+
+    if current_state is None:
+        # Если нет активного состояния, предлагаем начать
+        await message.answer("Начните с команды /start")
+        await state.set_state(VideoProcessing.waiting_for_theme)
+    elif current_state == VideoProcessing.waiting_for_video:
+        # Если ожидаем видео, но получили текст
+        await message.answer(
+            "📌 Я ожидаю видео для обработки.\n\n"
+            "Пожалуйста, отправьте видео файлом.\n"
+            "Если хотите изменить тему, отправьте команду /start\n"
+            "Или используйте /default для стандартной темы"
+        )
+        await state.set_state(VideoProcessing.waiting_for_theme)
+    elif current_state == VideoProcessing.processing:
+        # Уже обрабатывается в отдельном хендлере, но на всякий случай
+        await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
+    else:
+        # В других случаях (например, в waiting_for_theme), на будущее, если будеи расширяться
+        # Этот случай уже обрабатывается хендлером process_theme (waiting_for_theme)
+        pass
 
 
 # Обработка полученного видео общая функция
