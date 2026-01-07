@@ -1,6 +1,6 @@
-import datetime
 import logging
 import os
+from datetime import datetime
 
 from aiogram import types, Router
 from aiogram.filters import Command
@@ -364,6 +364,7 @@ async def cmd_admin_menu(message: Message):
 
     await message.answer(welcome_text, reply_markup=keyboard)
 
+
 @router.message(Command("settings"))
 @self_logger
 async def cmd_admin_settings(message: Message):
@@ -427,8 +428,8 @@ async def cmd_admin_help(message: Message):
 
     await message.answer(help_text, parse_mode='Markdown', reply_markup=keyboard)
 
+
 @router.message(Command("clear"))
 @self_logger
 async def cmd_clear_temp_files(message):
-
     pass
