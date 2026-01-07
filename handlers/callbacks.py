@@ -110,8 +110,6 @@ async def handle_admin_callback(callback: CallbackQuery, state: FSMContext):
 
     action = callback.data.replace("admin_", "")
 
-    # Удаляем меню
-    await callback.message.delete()
 
     if action == "stat":
         # Вызываем функцию базовой статистики
@@ -172,4 +170,5 @@ async def handle_admin_callback(callback: CallbackQuery, state: FSMContext):
         # Возврат в главное меню
         await cmd_admin_menu(callback.message)
 
+    await callback.message.delete()
     await callback.answer()
