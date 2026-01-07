@@ -22,5 +22,5 @@ ENVIRONMENT = os.environ.get('RAILWAY_ENVIRONMENT_NAME', "")
 # Настройка администраторов и пользователей
 admin_ids_str = os.environ.get("ADMIN_IDS", "")
 ADMIN_IDS = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()] if admin_ids_str else []  # ID Админов
-SUBSCRIBED_USERS_FILE = os.path.join(VOLUME_PATH, "../users.json")  # Файл для сохранения пользователей
+SUBSCRIBED_USERS_FILE = os.path.join(VOLUME_PATH, "users.json")  # Файл для сохранения пользователей
 SUBSCRIBED_USERS = set()  # Глобальная переменная для хранения подписчиков
