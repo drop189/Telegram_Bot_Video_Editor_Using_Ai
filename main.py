@@ -10,6 +10,7 @@ from handlers.callbacks import router as callbacks_router
 from handlers.processor import router as processor_router
 from services.subscribers import load_subscribed_users, send_bot_started_notification
 from settings.config import VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS
+from settings.logging import setup_logging
 from utils.shutdown import graceful_shutdown
 from utils.system import check_system_dependencies
 
@@ -51,6 +52,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        logger = setup_logging()
         asyncio.run(main())
         logging.info("Запуск бота на Railway...")
 

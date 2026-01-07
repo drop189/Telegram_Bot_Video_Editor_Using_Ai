@@ -92,6 +92,7 @@ async def handle_text(message: Message, state: FSMContext):
             "Если хотите изменить тему, отправьте команду /start\n"
             "Или используйте /default для стандартной темы"
         )
+        await state.set_state(VideoProcessing.waiting_for_theme)
     elif current_state == VideoProcessing.processing:
         # Уже обрабатывается в отдельном хендлере, но на всякий случай
         await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
