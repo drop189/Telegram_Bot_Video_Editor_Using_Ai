@@ -362,7 +362,7 @@ async def cmd_admin_menu(message: Message):
         f"*Выберите действие:*"
     )
 
-    await message.answer(welcome_text, parse_mode='Markdown', reply_markup=keyboard)
+    await message.answer(welcome_text, reply_markup=keyboard)
 
 @router.message(Command("settings"))
 @self_logger
