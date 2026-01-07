@@ -113,7 +113,7 @@ async def handle_admin_callback(callback: CallbackQuery, state: FSMContext):
 
     if action == "stat":
         # Вызываем функцию базовой статистики
-        await cmd_stat(callback.message)
+        await cmd_stat(callback.message, flag=True)
 
     elif action == "stats":
         # Вызываем функцию расширенной статистики
