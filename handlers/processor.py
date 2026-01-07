@@ -252,6 +252,13 @@ async def process_video(
 
     except Exception as e:
         logging.exception("Ошибка обработки видео")
+        error_type = type(e).__name__
+        error_msg = str(e)
+        usage_stats.record_error(
+            user_id=message.from_user.id,
+            error_type=error_type,
+            error_message=error_msg[:200]
+        )
         await message.answer(f"❌ Ошибка: {e}")
         await state.clear()
 
