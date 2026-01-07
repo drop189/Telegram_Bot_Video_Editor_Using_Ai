@@ -1,14 +1,17 @@
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from config import SUBSCRIBED_USERS
+
+from bot.states import VideoProcessing
 from services.ai_service import AI_STANDARD_THEME
-from states import VideoProcessing
-from utils.subscribers import save_subscribed_users
+from services.subscribers import save_subscribed_users
+from settings.config import SUBSCRIBED_USERS
 
 router = Router()
+
 
 # ============ КОМАНДЫ БОТА ============
 

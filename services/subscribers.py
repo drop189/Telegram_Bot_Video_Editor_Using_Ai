@@ -2,7 +2,9 @@ import asyncio
 import json
 import logging
 import os
-from config import SUBSCRIBED_USERS_FILE, SUBSCRIBED_USERS, ADMIN_IDS, bot
+
+from bot.dispatcher import bot
+from settings.config import SUBSCRIBED_USERS_FILE, SUBSCRIBED_USERS, ADMIN_IDS
 
 
 # ============ ФУНКЦИИ ДЛЯ ПОДПИСЧИКОВ ============
@@ -71,6 +73,7 @@ async def send_bot_stopping_notification():
         logging.info(f"Уведомление о завершении отправлено: {sent} успешно, {failed} неудачно")
     except Exception as e:
         logging.error(f"Ошибка отправки уведомления о завершении: {e}")
+
 
 # Уведомление за 30 секунд до остановки работы (не используется)
 async def notify_planned_shutdown():

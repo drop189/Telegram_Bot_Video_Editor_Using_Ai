@@ -1,13 +1,17 @@
 import os
+
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from config import ADMIN_IDS, VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS, bot
-from states import AdminSendMessage
-from utils.subscribers import save_subscribed_users
+
+from bot.dispatcher import bot
+from bot.states import AdminSendMessage
+from services.subscribers import save_subscribed_users
+from settings.config import ADMIN_IDS, VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS
 
 router = Router()
+
 
 # ============ КОМАНДЫ АДМИНА БОТА ============
 

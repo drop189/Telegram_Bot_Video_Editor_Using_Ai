@@ -1,15 +1,19 @@
 import asyncio
 import logging
 import os
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, FSInputFile
-from config import bot, VIDEOS_FOLDER, OUTPUT_FOLDER, dp
+
+from bot.dispatcher import bot
+from bot.states import VideoProcessing
 from services.ai_service import AI_STANDARD_THEME
 from services.video_editor import process_single_video
-from states import VideoProcessing
+from settings.config import VIDEOS_FOLDER, OUTPUT_FOLDER
 
 router = Router()
+
 
 # ============ ХЕНДЛЕРЫ БОТА ============
 
@@ -125,6 +129,7 @@ async def process_theme(message: Message, state: FSMContext):
     )
 
     await state.set_state(VideoProcessing.waiting_for_video)
+
 
 # Обработка полученного видео общая функция
 async def process_video(

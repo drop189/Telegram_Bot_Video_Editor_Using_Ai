@@ -2,9 +2,11 @@ import logging
 import os
 import subprocess
 import textwrap
+
 from PIL import Image, ImageDraw, ImageFont
-from config import FFMPEG_PATH, FONT_PATH
+
 from services.ai_service import generate_title_and_description, AI_STANDARD_THEME
+from settings.config import FFMPEG_PATH, FONT_PATH
 
 
 # ============ ФУНКЦИИ ОБРАБОТКИ ВИДЕО ============

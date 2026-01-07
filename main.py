@@ -3,45 +3,15 @@ import logging
 import os
 import sys
 
-from handlers.basic import router as basic_router
+from bot.dispatcher import dp, bot
 from handlers.admin import router as admin_router
+from handlers.basic import router as basic_router
 from handlers.callbacks import router as callbacks_router
 from handlers.processor import router as processor_router
-
-from config import bot, VIDEOS_FOLDER, OUTPUT_FOLDER, dp, \
-    SUBSCRIBED_USERS
-from utils.subscribers import save_subscribed_users, load_subscribed_users, send_bot_stopping_notification, \
-    send_bot_started_notification
+from services.subscribers import load_subscribed_users, send_bot_started_notification
+from settings.config import VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS
+from utils.shutdown import graceful_shutdown
 from utils.system import check_system_dependencies
-
-
-# ============ GRACEFUL SHUTDOWN ============
-
-async def graceful_shutdown():
-    """Плавное завершение работы бота"""
-    logging.info("Начинаю плавное завершение работы...")
-
-    try:
-        # Отправляем уведомление об остановке только если бот работал
-        await send_bot_stopping_notification()
-    finally:
-        # Останавливаем диспетчер
-        try:
-            await dp.storage.close()
-        except Exception as e:
-            logging.error(f"Ошибка при закрытии storage: {e}")
-
-        # Сохраняем пользователей
-        save_subscribed_users()
-        logging.info("Список пользователей сохранен")
-
-        # Закрываем сессию бота
-        try:
-            await bot.session.close()
-        except Exception as e:
-            logging.error(f"Ошибка при закрытии сессии бота: {e}")
-
-        logging.info("Бот успешно завершил работу")
 
 
 # ============ ЗАПУСК БОТА ============
@@ -54,7 +24,6 @@ async def main():
     dp.include_router(admin_router)
     dp.include_router(callbacks_router)
     dp.include_router(processor_router)
-
 
     # Загружаем подписчиков
     SUBSCRIBED_USERS.update(load_subscribed_users())
