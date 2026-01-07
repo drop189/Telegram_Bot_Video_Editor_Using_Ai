@@ -115,7 +115,15 @@ class UsageStats:
         except Exception as e:
             logging.error(f"Ошибка сохранения статистики: {e}")
 
-    # ОБНОВЛЕННЫЙ МЕТОД - полностью безопасный
+    def record_session_start(self):
+        """Записывает начало сессии"""
+        try:
+            self.stats['sessions'] = self.stats.get('sessions', 0) + 1
+            self.save()
+        except Exception as e:
+            logging.error(f"Ошибка записи сессии: {e}")
+
+
     def record_video_processed(self, user_id: int, processing_time: float,
                                theme: str = None, content_length: int = None):
         """Записывает успешную обработку видео"""
@@ -125,7 +133,7 @@ class UsageStats:
             today = current_time.strftime('%Y-%m-%d')
             hour = current_time.strftime('%H')  # '01', '02', ..., '23'
 
-            # Убедимся, что peak_hours - это defaultdict
+            # peak_hours - это defaultdict
             if not isinstance(self.stats['peak_hours'], defaultdict):
                 logging.warning("peak_hours не является defaultdict, конвертирую...")
                 self.stats['peak_hours'] = defaultdict(int, self.stats['peak_hours'])
@@ -134,7 +142,7 @@ class UsageStats:
             self.stats['videos_processed'] += 1
             self.stats['daily_usage'][today] += 1
             self.stats['user_activity'][str(user_id)] += 1
-            self.stats['peak_hours'][hour] += 1  # Теперь безопасно!
+            self.stats['peak_hours'][hour] += 1
             self.stats['last_activity'] = current_time.isoformat()
 
             # Обновляем список последних пользователей
