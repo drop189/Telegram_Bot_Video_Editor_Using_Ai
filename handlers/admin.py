@@ -25,12 +25,15 @@ router = Router()
 # Команда /stat - статистика
 @router.message(Command("stat"))
 @self_logger
-async def cmd_stat(message: Message):
+async def cmd_stat(message: Message, flag=False):
     """Статистика бота (только для админов)"""
     user_id = message.from_user.id
-    if user_id not in ADMIN_IDS:
-        await message.answer("❌ У вас нет прав для просмотра статистики.")
-        return
+    if not flag:
+        if user_id not in ADMIN_IDS:
+            await message.answer("❌ У вас нет прав для просмотра статистики.")
+            return
+    else:
+        pass
 
     # Проверяем размер папок
     input_size = 0
