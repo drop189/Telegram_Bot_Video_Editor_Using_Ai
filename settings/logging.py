@@ -46,12 +46,13 @@ def setup_logging():
 
 
 def self_logger(func: Callable):
-    """Декоратор для автоматического логирования ошибок и записи статистики"""
+    """Декоратор для логирования ошибок в хендлерах"""
 
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
-        # Ищем message в аргументах
         message = None
+
+        # Ищем объект message
         for arg in args:
             if hasattr(arg, 'from_user'):
                 message = arg
@@ -65,28 +66,51 @@ def self_logger(func: Callable):
 
         try:
             return await func(*args, **kwargs)
-        except Exception as e:
-            if message:
-                user_id = message.from_user.id
-                error_type = type(e).__name__
-                error_msg = str(e)
 
-                # Записываем в статистику
+        except Exception as e:
+            user_id = message.from_user.id if message else 0
+            error_type = type(e).__name__
+            error_msg = str(e)
+
+            # Получаем логгер
+            logger = logging.getLogger(func.__module__)
+
+            # Детальное логирование
+            logger.error(
+                f"Ошибка в {func.__name__} | "
+                f"Пользователь: {user_id} | "
+                f"Тип: {error_type} | "
+                f"Сообщение: {error_msg[:200]}",
+                exc_info=True,
+                extra={
+                    'user_id': user_id,
+                    'handler': func.__name__,
+                    'error_type': error_type,
+                    'module': func.__module__
+                }
+            )
+
+            # Запись в статистику
+            try:
                 usage_stats.record_error(
                     user_id=user_id,
                     error_type=error_type,
                     error_message=error_msg[:200]
                 )
+            except Exception as stats_error:
+                logger.error(f"Ошибка записи статистики: {stats_error}")
 
-                # Логируем
-                logger = logging.getLogger(func.__module__)
-                logger.error(
-                    f"Ошибка в {func.__name__} у пользователя {user_id}: "
-                    f"{error_type} - {error_msg}",
-                    exc_info=True
-                )
+            # НЕ ПОДНИМАЕМ ИСКЛЮЧЕНИЕ для хендлеров
+            # Вместо этого пытаемся отправить сообщение пользователю
+            if message and hasattr(message, 'answer'):
+                try:
+                    await message.answer(
+                        f"❌ Произошла ошибка: {error_msg[:100]}" +
+                        ("..." if len(error_msg) > 100 else "")
+                    )
+                except Exception:
+                    pass
 
-            # Переподнимаем исключение
-            raise
+            return None  # Возвращаем None вместо исключения
 
     return wrapper
