@@ -15,7 +15,7 @@ router = Router()
 # ============ ХЕНДЛЕРЫ БОТА ============
 
 # Обработка видео с сохраненной темой
-@dp.message(VideoProcessing.waiting_for_video, F.video)
+@router.message(VideoProcessing.waiting_for_video, F.video)
 async def handle_video_with_theme(message: Message, state: FSMContext):
     data = await state.get_data()
     theme = data.get("theme", AI_STANDARD_THEME)
@@ -31,7 +31,7 @@ async def handle_video_with_theme(message: Message, state: FSMContext):
 
 
 # Обработка видео БЕЗ предварительного выбора темы (используется стандартная тема)
-@dp.message(F.video)
+@router.message(F.video)
 async def handle_video_without_theme(message: Message, state: FSMContext):
     if await state.get_state() == VideoProcessing.waiting_for_video:
         return
@@ -47,7 +47,7 @@ async def handle_video_without_theme(message: Message, state: FSMContext):
 
 
 # Если в состоянии waiting_for_theme пришло фото
-@dp.message(VideoProcessing.waiting_for_theme, F.photo)
+@router.message(VideoProcessing.waiting_for_theme, F.photo)
 async def handle_photo_in_theme_state(message: Message):
     await message.answer(
         "📌 Вы отправили фото, но я ожидаю тему для текста.\n\n"
@@ -57,7 +57,7 @@ async def handle_photo_in_theme_state(message: Message):
 
 
 # Если в состоянии waiting_for_theme пришел документ
-@dp.message(VideoProcessing.waiting_for_theme, F.document)
+@router.message(VideoProcessing.waiting_for_theme, F.document)
 async def handle_document_in_theme_state(message: Message):
     await message.answer(
         "📌 Вы отправили документ, но я ожидаю тему для текста.\n\n"
@@ -67,13 +67,13 @@ async def handle_document_in_theme_state(message: Message):
 
 
 # Обработка текстовых сообщений в неправильном состоянии
-@dp.message(VideoProcessing.processing)
+@router.message(VideoProcessing.processing)
 async def handle_text_while_processing(message: Message):
     await message.answer("⏳ Пожалуйста, подождите, текущее видео еще обрабатывается...")
 
 
 # Обработка обычных текстовых сообщений (без состояния или в других состояниях)
-@dp.message(F.text)
+@router.message(F.text)
 async def handle_text(message: Message, state: FSMContext):
     current_state = await state.get_state()
 
@@ -99,7 +99,7 @@ async def handle_text(message: Message, state: FSMContext):
 
 
 # Получение темы от пользователя - ТОЛЬКО для текстовых сообщений
-@dp.message(VideoProcessing.waiting_for_theme, F.text)
+@router.message(VideoProcessing.waiting_for_theme, F.text)
 async def process_theme(message: Message, state: FSMContext):
     # Проверяем, что есть текст
     if not message.text:
