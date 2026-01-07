@@ -195,16 +195,20 @@ async def process_video(
         )
 
         if desc and desc != "Описание не сгенерировано":
-            description_text = (
-                "📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:\n"
-                "-------------------------\n"
-                f"{desc}\n\n"
-                f"✨ Текст на видео: \"{title}\"\n"
-                f"🎯 Тема: {used_theme}"
-            )
+            description_text = \
+                f"""
+                📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:
+                ```Копировать
+                {desc}
+                ```
+                ✨ Текст на видео: "{title}"
+                🎯 Тема: {used_theme}
+                """
 
-            for part in textwrap.wrap(description_text, 4000):
-                await message.answer(part)
+            if len(description_text) > 4096:
+                parts = [description_text[i:i + 4000] for i in range(0, len(description_text), 4000)]
+                for part in parts: await message.answer(part)
+                else: await message.answer(description_text, parse_mode='Markdown')
 
         await status_message.delete()
 
