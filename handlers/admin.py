@@ -316,7 +316,7 @@ async def cmd_add_user(message: Message):
 
 
 @router.message(Command("admin"))
-@self_logger
+#@self_logger
 async def cmd_admin_menu(message: Message):
     """Меню админ-команд с инлайн-кнопками"""
     user_id = message.from_user.id
@@ -397,6 +397,9 @@ async def cmd_admin_settings(message: Message):
 @self_logger
 async def cmd_admin_help(message: Message):
     """Справка по админ-командам"""
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
     help_text = (
         f"❓ *Справка по админ-командам*\n\n"
         f"*Основные команды:*\n"
@@ -427,4 +430,5 @@ async def cmd_admin_help(message: Message):
 @router.message(Command("clear"))
 @self_logger
 async def cmd_clear_temp_files(message):
+
     pass
