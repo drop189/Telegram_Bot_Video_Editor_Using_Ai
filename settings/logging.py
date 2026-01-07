@@ -71,19 +71,19 @@ def self_logger(func: Callable):
                 error_type = type(e).__name__
                 error_msg = str(e)
 
+                # Записываем в статистику
+                usage_stats.record_error(
+                    user_id=user_id,
+                    error_type=error_type,
+                    error_message=error_msg[:200]
+                )
+
                 # Логируем
                 logger = logging.getLogger(func.__module__)
                 logger.error(
                     f"Ошибка в {func.__name__} у пользователя {user_id}: "
                     f"{error_type} - {error_msg}",
                     exc_info=True
-                )
-
-                # Записываем в статистику
-                usage_stats.record_error(
-                    user_id=user_id,
-                    error_type=error_type,
-                    error_message=error_msg[:200]
                 )
 
             # Переподнимаем исключение
