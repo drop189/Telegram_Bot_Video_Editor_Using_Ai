@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import textwrap
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, FSInputFile
@@ -194,28 +193,34 @@ async def process_video(
             caption=caption
         )
 
+        # Отправляем описание отдельным сообщением
         if desc and desc != "Описание не сгенерировано":
-            description_text = \
-                f"""
-                📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:
-                ```Копировать
-                {desc}
-                ```
-                ✨ Текст на видео: "{title}"
-                🎯 Тема: {used_theme}
+            # Форматируем описание для лучшей читаемости
+            description_text = f"""
+📝 ОПИСАНИЕ ДЛЯ INSTAGRAM:
+```Копировать
+{desc}
+```
+✨ Текст на видео: "{title}"
+🎯 Тема: {used_theme}
                 """
 
+            # Разбиваем на части если слишком длинное (ограничение Telegram)
             if len(description_text) > 4096:
                 parts = [description_text[i:i + 4000] for i in range(0, len(description_text), 4000)]
-                for part in parts: await message.answer(part)
-                else: await message.answer(description_text, parse_mode='Markdown')
+                for part in parts:
+                    await message.answer(part)
+            else:
+                await message.answer(description_text, parse_mode='Markdown')
 
         await status_message.delete()
 
         await message.answer(
-            "✅ Готово! Видео обработано.\n\n"
-            "Отправь новую тему или следующее видео.\n"
-            "Для отмены — /cancel"
+            "✅ Готово! Видео обработано успешно.\n\n"
+            "Хочешь обработать еще одно видео?\n"
+            "1. Отправь новую тему для текста\n"
+            "2. Или просто отправь следующее видео - будет использована стандартная тема\n\n"
+            "Для отмены используй /cancel"
         )
 
         await state.set_state(VideoProcessing.waiting_for_theme)
