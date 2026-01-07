@@ -316,7 +316,7 @@ async def cmd_add_user(message: Message):
 
 
 @router.message(Command("admin"))
-#@self_logger
+@self_logger
 async def cmd_admin_menu(message: Message):
     """Меню админ-команд с инлайн-кнопками"""
     user_id = message.from_user.id
@@ -326,26 +326,26 @@ async def cmd_admin_menu(message: Message):
         return
 
     # Создаем клавиатуру
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📊 Базовая статистика", callback_data="admin_stat"),
-            InlineKeyboardButton(text="📈 Расширенная статистика", callback_data="admin_stats")
+            types.InlineKeyboardButton(text="📊 Базовая статистика", callback_data="admin_stat"),
+            types.InlineKeyboardButton(text="📈 Расширенная статистика", callback_data="admin_stats")
         ],
         [
-            InlineKeyboardButton(text="🔍 Детальная статистика", callback_data="admin_detailed_stats"),
-            InlineKeyboardButton(text="📤 Отправить сообщение", callback_data="admin_send_msg")
+            types.InlineKeyboardButton(text="🔍 Детальная статистика", callback_data="admin_detailed_stats"),
+            types.InlineKeyboardButton(text="📤 Отправить сообщение", callback_data="admin_send_msg")
         ],
         [
-            InlineKeyboardButton(text="👤 Добавить пользователя", callback_data="admin_add_user"),
-            InlineKeyboardButton(text="📨 Быстрая отправка", callback_data="admin_quick_send")
+            types.InlineKeyboardButton(text="👤 Добавить пользователя", callback_data="admin_add_user"),
+            types.InlineKeyboardButton(text="📨 Быстрая отправка", callback_data="admin_quick_send")
         ],
         [
-            InlineKeyboardButton(text="🔄 Обновить статистику", callback_data="admin_refresh_stats"),
-            InlineKeyboardButton(text="🗑️ Очистить кэш", callback_data="admin_clear_cache")
+            types.InlineKeyboardButton(text="🔄 Обновить статистику", callback_data="admin_refresh_stats"),
+            types.InlineKeyboardButton(text="🗑️ Очистить кэш", callback_data="admin_clear_cache")
         ],
         [
-            InlineKeyboardButton(text="⚙️ Настройки", callback_data="admin_settings"),
-            InlineKeyboardButton(text="❓ Помощь", callback_data="admin_help")
+            types.InlineKeyboardButton(text="⚙️ Настройки", callback_data="admin_settings"),
+            types.InlineKeyboardButton(text="❓ Помощь", callback_data="admin_help")
         ]
     ])
 
