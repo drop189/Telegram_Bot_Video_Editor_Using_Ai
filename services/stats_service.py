@@ -47,7 +47,7 @@ class UsageStats:
             'content_lengths': [],  # длины сгенерированных текстов
             'processing_times': [],  # время обработки видео
             'themes_used': defaultdict(int),  # тема: количество использований
-            'start_time': datetime.now(moscow_tz).isoformat(),
+            'start_time': datetime.now().isoformat(),
             'uptime_days': 0,
             'sessions': 0
         }
@@ -74,7 +74,7 @@ class UsageStats:
     def update_uptime(self):
         """Обновляет время работы"""
         start_time = datetime.fromisoformat(self.stats['start_time'])
-        self.stats['uptime_days'] = (datetime.now(moscow_tz) - start_time).days
+        self.stats['uptime_days'] = (datetime.now() - start_time).days
 
     def record_video_processed(self, user_id: int, processing_time: float,
                                theme: str = None, content_length: int = None):
