@@ -3,7 +3,7 @@ import logging
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from config import dp, ADMIN_IDS, SUBSCRIBED_USERS, bot
+from config import ADMIN_IDS, SUBSCRIBED_USERS, bot
 from states import AdminSendMessage
 
 router = Router()
@@ -11,7 +11,7 @@ router = Router()
 # ============ КОЛБЭКИ ============
 
 # Обработка ответов от кнопок из бота
-@dp.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
+@router.callback_query(AdminSendMessage.waiting_for_user_choice, F.data.startswith("send_to_"))
 async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
@@ -44,7 +44,7 @@ async def process_user_choice(callback: types.CallbackQuery, state: FSMContext):
 
 
 # Реализация выбора кнопок
-@dp.message(AdminSendMessage.waiting_for_message_text, F.text)
+@router.message(AdminSendMessage.waiting_for_message_text, F.text)
 async def process_message_text(message: Message, state: FSMContext):
     data = await state.get_data()
     target = data.get('target')

@@ -3,7 +3,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from config import dp, SUBSCRIBED_USERS
+from config import SUBSCRIBED_USERS
 from services.ai_service import AI_STANDARD_THEME
 from states import VideoProcessing
 from utils.subscribers import save_subscribed_users
@@ -13,7 +13,7 @@ router = Router()
 # ============ КОМАНДЫ БОТА ============
 
 # Команда /start
-@dp.message(Command("start"))
+@router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.first_name
@@ -38,7 +38,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
 
 # Команда /default - использовать стандартную тему
-@dp.message(Command("default"))
+@router.message(Command("default"))
 async def cmd_default(message: Message, state: FSMContext):
     await state.update_data(theme=AI_STANDARD_THEME)
     await message.answer(
@@ -49,7 +49,7 @@ async def cmd_default(message: Message, state: FSMContext):
 
 
 # Команда /cancel - отмена
-@dp.message(Command("cancel"))
+@router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Операция отменена. Используйте /start чтобы начать заново.")

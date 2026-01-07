@@ -5,6 +5,7 @@ import sys
 
 from handlers.basic import router as basic_router
 from handlers.admin import router as admin_router
+from handlers.callbacks import router as callbacks_router
 
 
 from config import bot, VIDEOS_FOLDER, OUTPUT_FOLDER, dp, \
@@ -51,6 +52,7 @@ async def main():
     # Регистрация роутеров
     dp.include_router(basic_router)
     dp.include_router(admin_router)
+    dp.include_router(callbacks_router)
 
 
     # Загружаем подписчиков

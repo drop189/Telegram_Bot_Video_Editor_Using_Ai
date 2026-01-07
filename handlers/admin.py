@@ -3,7 +3,7 @@ from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from config import dp, ADMIN_IDS, VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS, bot
+from config import ADMIN_IDS, VIDEOS_FOLDER, OUTPUT_FOLDER, SUBSCRIBED_USERS, bot
 from states import AdminSendMessage
 from utils.subscribers import save_subscribed_users
 
@@ -12,7 +12,7 @@ router = Router()
 # ============ КОМАНДЫ АДМИНА БОТА ============
 
 # Команда /stats - статистика
-@dp.message(Command("stats"))
+@router.message(Command("stats"))
 async def cmd_stats(message: Message):
     """Статистика бота (только для админов)"""
     user_id = message.from_user.id
@@ -60,7 +60,7 @@ async def cmd_stats(message: Message):
 
 
 # Команда /msg - отправка сообщений с удобным меню
-@dp.message(Command("msg"))
+@router.message(Command("msg"))
 async def cmd_send_message_menu(message: Message, state: FSMContext):
     """Меню отправки сообщения (только для админов)"""
     user_id = message.from_user.id
@@ -110,7 +110,7 @@ async def cmd_send_message_menu(message: Message, state: FSMContext):
 
 
 # Команда /send - отправка сообщения
-@dp.message(Command("send"))
+@router.message(Command("send"))
 async def cmd_quick_message(message: Message):
     """Быстрая отправка сообщения"""
     user_id = message.from_user.id
@@ -142,7 +142,7 @@ async def cmd_quick_message(message: Message):
 
 
 # Команда /adduser - добавление пользователя
-@dp.message(Command("adduser"))
+@router.message(Command("adduser"))
 async def cmd_add_user(message: Message):
     """Добавить пользователя в users.json"""
     user_id = message.from_user.id
