@@ -47,7 +47,7 @@ class UsageStats:
             'content_lengths': [],  # длины сгенерированных текстов
             'processing_times': [],  # время обработки видео
             'themes_used': defaultdict(int),  # тема: количество использований
-            'start_time': datetime.now().isoformat(),
+            'start_time': datetime.now(moscow_tz).isoformat(),
             'uptime_days': 0,
             'sessions': 0
         }

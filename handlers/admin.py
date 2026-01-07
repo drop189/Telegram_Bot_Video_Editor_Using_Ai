@@ -404,6 +404,7 @@ async def cmd_admin_settings(message: Message):
 async def cmd_admin_help(message: Message):
     """Справка по админ-командам"""
     if message.from_user.id not in ADMIN_IDS:
+        await message.answer("Пу пу")
         return
 
     help_text = (
